@@ -11,6 +11,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+// for MajorMove and AttackingMove
+import static net.chess.engine.board.Move.*;
+
 public class Knight extends Piece{
     // 8 kandidaten der Moves eines Knights
     private final static int[] POSSIBLE_MOVE_COORDINATES = {-17, -15, -10, -6, 6, 10, 15, 17};
@@ -20,7 +23,7 @@ public class Knight extends Piece{
     }
 
     @Override
-    public Collection<Move> calcLegalMoves(Board board) {
+    public Collection<Move> calcLegalMoves(final Board board) {
         int candidateDestinationCoordinate;
         final List<Move> legalMoves = new ArrayList<>();
 
@@ -39,13 +42,13 @@ public class Knight extends Piece{
                 final Square candidateDestinationSquare = board.getSquare(candidateDestinationCoordinate);
 
                 if(!candidateDestinationSquare.isOccupied()) {
-                    legalMoves.add(new Move());
+                    legalMoves.add(new Move.MajorMove(board, this, candidateDestinationCoordinate));
                 } else {
                     final Piece pieceAtDestination = candidateDestinationSquare.getPiece();
                     final Alliance pieceAlliance = candidateDestinationSquare.getPiece().getPieceAlliance();
 
                     if (this.pieceAlliance != pieceAlliance) {
-                        legalMoves.add(new Move());
+                        legalMoves.add(new AttackMove(board, this, candidateDestinationCoordinate, pieceAtDestination));
                     }
                 }
             }

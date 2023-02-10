@@ -12,10 +12,11 @@ public abstract class Square {
     protected final int squareCoordinate;
     private static final Map<Integer, EmptySquare> EMPTY_SQUARES_CACHE = createAllPossibleEmptySquares();
 
+
     private static Map<Integer, EmptySquare> createAllPossibleEmptySquares() {
         final Map<Integer, EmptySquare> emptySquareMap = new HashMap<>();
 
-        for (int i = 0; i < 64; i++) {
+        for (int i = 0; i < BoardUtilities.NUM_SQUARES; i++) {
             emptySquareMap.put(i, new EmptySquare(i));
         }
         // i don't want anyone to change this map, so i will want to make it immutable (through guava)
@@ -28,6 +29,7 @@ public abstract class Square {
                 : EMPTY_SQUARES_CACHE.get(squareCoordinate);
     }
 
+    // constructor
     private Square(final int squareCoordinate) {
         this.squareCoordinate = squareCoordinate;
     }
@@ -57,7 +59,7 @@ public abstract class Square {
 
         private final Piece currentPiece;
 
-        private OccupiedSquare(final int squareCoordinate, Piece currentPiece) {
+        private OccupiedSquare(final int squareCoordinate, final Piece currentPiece) {
             super(squareCoordinate);
             this.currentPiece = currentPiece;
         }
