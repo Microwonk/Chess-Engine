@@ -19,7 +19,7 @@ public abstract class Square {
         for (int i = 0; i < BoardUtilities.NUM_SQUARES; i++) {
             emptySquareMap.put(i, new EmptySquare(i));
         }
-        // i don't want anyone to change this map, so i will want to make it immutable (through guava)
+        // I don't want anyone to change this map, so i will want to make it immutable (through guava)
         return ImmutableMap.copyOf(emptySquareMap);
     }
 
@@ -45,6 +45,11 @@ public abstract class Square {
         }
 
         @Override
+        public String toString() {
+            return "-";
+        }
+
+        @Override
         public boolean isOccupied() {
             return false;
         }
@@ -62,6 +67,12 @@ public abstract class Square {
         private OccupiedSquare(final int squareCoordinate, final Piece currentPiece) {
             super(squareCoordinate);
             this.currentPiece = currentPiece;
+        }
+
+        @Override
+        public String toString() {
+            return getPiece().getPieceTeam().isBlack() ? getPiece().toString().toLowerCase():
+                    getPiece().toString();
         }
 
         @Override

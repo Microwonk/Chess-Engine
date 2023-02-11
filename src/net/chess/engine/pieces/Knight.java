@@ -1,7 +1,7 @@
 package net.chess.engine.pieces;
 
 import com.google.common.collect.ImmutableList;
-import net.chess.engine.Alliance;
+import net.chess.engine.Team;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.BoardUtilities;
 import net.chess.engine.board.Move;
@@ -18,8 +18,8 @@ public class Knight extends Piece{
     // 8 kandidaten der Moves eines Knights
     private final static int[] POSSIBLE_MOVE_COORDINATES = {-17, -15, -10, -6, 6, 10, 15, 17};
 
-    Knight(final int piecePosition, final Alliance pieceAlliance) {
-        super(piecePosition, pieceAlliance);
+    public Knight(final int piecePosition, final Team pieceTeam) {
+        super(piecePosition, pieceTeam, PieceType.KNIGHT);
     }
 
     @Override
@@ -42,12 +42,12 @@ public class Knight extends Piece{
                 final Square candidateDestinationSquare = board.getSquare(candidateDestinationCoordinate);
 
                 if(!candidateDestinationSquare.isOccupied()) {
-                    legalMoves.add(new Move.MajorMove(board, this, candidateDestinationCoordinate));
+                    legalMoves.add(new MajorMove(board, this, candidateDestinationCoordinate));
                 } else {
                     final Piece pieceAtDestination = candidateDestinationSquare.getPiece();
-                    final Alliance pieceAlliance = candidateDestinationSquare.getPiece().getPieceAlliance();
+                    final Team pieceTeam = candidateDestinationSquare.getPiece().getPieceTeam();
 
-                    if (this.pieceAlliance != pieceAlliance) {
+                    if (this.pieceTeam != pieceTeam) {
                         legalMoves.add(new AttackMove(board, this, candidateDestinationCoordinate, pieceAtDestination));
                     }
                 }
@@ -80,4 +80,8 @@ public class Knight extends Piece{
                 || (candidateOffset == -15));
     }
 
+    @Override
+    public String toString() {
+        return PieceType.KNIGHT.toString();
+    }
 }
