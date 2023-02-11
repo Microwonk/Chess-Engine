@@ -36,6 +36,27 @@ public abstract class Player {
         return this.legalMoves.contains(move);
     }
 
+    //TODO: implement
+    public boolean isInCheck() {
+        return false;
+    }
+
+    public boolean isInCheckMate() {
+        return false;
+    }
+
+    public boolean isInStalemate() {
+        return false;
+    }
+
+    public boolean isCastled() {
+        return false;
+    }
+
+    public MoveTransition makeMove(final Move move) {
+        return null;
+    }
+
     public abstract Collection<Piece> getActivePieces();
     public abstract Team getTeam();
     public abstract Player getOpponent();
