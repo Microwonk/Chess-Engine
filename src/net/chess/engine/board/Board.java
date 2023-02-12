@@ -1,6 +1,7 @@
 package net.chess.engine.board;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import net.chess.engine.Team;
 import net.chess.engine.board.player.BlackPlayer;
 import net.chess.engine.board.player.Player;
@@ -150,10 +151,16 @@ public class Board {
         return chessBoard.get(squareCoordinate);
     }
 
+    // very complex, yoinked this straight out of stackexchange
+    public Iterable<Move> getAllLegalMoves() {
+        return Iterables.unmodifiableIterable(Iterables.concat(this.whitePlayer.getLegalMoves(), this.blackPlayer.getLegalMoves()));
+    }
+
     // inner builder class -> directly stolen from design patterns
     public static class Builder {
         Map<Integer, Piece> boardConfiguration;
         Team nextMoveMaker;
+        Pawn enPassantPawn;
 
         public Builder() {
             this.boardConfiguration = new HashMap<>();
@@ -171,6 +178,10 @@ public class Board {
 
         public Board build() {
             return new Board(this);
+        }
+
+        public void setEnPassantPawn(Pawn enPassantPawn) {
+            this.enPassantPawn = enPassantPawn;
         }
     }
 

@@ -28,7 +28,7 @@ public abstract class Player {
         this.isInCheck = !Player.calculateAttacksOnSquare(this.playerKing.getPiecePosition(), opponentsMoves).isEmpty();
     }
 
-    private static Collection<Move> calculateAttacksOnSquare(final int piecePosition
+    protected static Collection<Move> calculateAttacksOnSquare(final int piecePosition
             , final Collection<Move> opponentsMoves) {
         final List<Move> attackMoves = new ArrayList<>();
 
@@ -110,4 +110,5 @@ public abstract class Player {
     public abstract Collection<Piece> getActivePieces();
     public abstract Team getTeam();
     public abstract Player getOpponent();
+    protected abstract Collection<Move> calculateKingCastles(Collection<Move> playerLegals, Collection<Move> opponentLegals);
 }
