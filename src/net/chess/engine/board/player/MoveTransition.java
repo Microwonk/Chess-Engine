@@ -3,6 +3,8 @@ package net.chess.engine.board.player;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.Move;
 
+import java.util.concurrent.Future;
+
 
 // from one move to another
 // , changing information
@@ -22,4 +24,7 @@ public class MoveTransition {
         this.moveStatus = moveStatus;
     }
 
+    public MoveStatus getMoveStatus() {
+        return this.moveStatus;
+    }
 }

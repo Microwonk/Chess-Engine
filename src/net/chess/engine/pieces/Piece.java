@@ -5,6 +5,7 @@ import net.chess.engine.board.Board;
 import net.chess.engine.board.Move;
 
 import java.util.Collection;
+import java.util.Objects;
 
 public abstract class Piece {
 
@@ -12,17 +13,43 @@ public abstract class Piece {
     protected final int piecePosition;
     protected final Team pieceTeam;
     protected final boolean isFirstMove;
+    private final int cachedHashCode;
 
     Piece (final int piecePosition, final Team pieceTeam, final PieceType pieceType) {
         this.piecePosition = piecePosition;
         this.pieceTeam = pieceTeam;
         this.isFirstMove = false;
         this.pieceType = pieceType;
+        this.cachedHashCode = computeHashCode();
+    }
+
+    private int computeHashCode() {
+        return Objects.hash(pieceType, piecePosition, pieceTeam, isFirstMove);
     }
 
     public Team getPieceTeam() {
         return this.pieceTeam;
     }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof final Piece oPiece)) {
+            return false;
+        }
+        return piecePosition == oPiece.getPiecePosition()
+                && pieceType == oPiece.getPieceType()
+                && pieceTeam == oPiece.getPieceTeam()
+                && isFirstMove == oPiece.isFirstMove;
+    }
+
+    @Override
+    public int hashCode() {
+        return this.cachedHashCode;
+    }
+
     public boolean isFirstMove() {
         return this.isFirstMove;
     }
@@ -36,6 +63,8 @@ public abstract class Piece {
     public PieceType getPieceType() {
         return this.pieceType;
     }
+
+    public abstract Piece movePiece(final Move move);
 
     public enum PieceType {
 
@@ -75,7 +104,6 @@ public abstract class Piece {
                 return true;
             }
         };
-
 
         private String pieceName;
 

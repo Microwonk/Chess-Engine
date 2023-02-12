@@ -53,6 +53,11 @@ public class King extends Piece{
         return ImmutableList.copyOf(legalMoves);
     }
 
+    @Override
+    public King movePiece(Move move) {
+        return new King(move.getDestinationCoordinate(), move.getPiece().getPieceTeam());
+    }
+
     private static boolean isFirstColumnExclusion(final int currentPosition, final int candidateOffset) {
         return BoardUtilities.FIRST_COLUMN[currentPosition] && ((candidateOffset == -9)
                 || (candidateOffset == -1)
