@@ -19,7 +19,11 @@ public class Queen extends Piece {
     private final static int[] POSSIBLE_MOVE_COORDINATES = {-9, -8, -7, -1, 1, 7, 8, 9};
 
     public Queen(final int piecePosition, final Team pieceTeam) {
-        super(piecePosition, pieceTeam, PieceType.QUEEN);
+        super(piecePosition, pieceTeam, PieceType.QUEEN, true);
+    }
+
+    public Queen(final int piecePosition, final Team pieceTeam, final boolean isFirstMove) {
+        super(piecePosition, pieceTeam, PieceType.ROOK, isFirstMove);
     }
 
     @Override

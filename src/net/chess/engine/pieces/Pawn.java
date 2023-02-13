@@ -18,7 +18,11 @@ public class Pawn extends Piece {
     private final static int[] POSSIBLE_MOVE_COORDINATE = {7, 8, 9, 16};
 
     public Pawn(final int piecePosition, final Team pieceTeam) {
-        super(piecePosition, pieceTeam, PieceType.PAWN);
+        super(piecePosition, pieceTeam, PieceType.PAWN, true);
+    }
+
+    public Pawn(final int piecePosition, final Team pieceTeam, final boolean isFirstMove) {
+        super(piecePosition, pieceTeam, PieceType.ROOK, isFirstMove);
     }
 
     @Override
@@ -38,14 +42,13 @@ public class Pawn extends Piece {
                 legalMoves.add(new MajorMove(board ,this, candidateDestinationCoordinate));
             } // two in front
             else if (currentCandidateOffset == 16 && this.isFirstMove()
-                    && (BoardUtilities.SECOND_ROW[this.piecePosition] && this.pieceTeam.isBlack()) ||
-                    (BoardUtilities.SEVENTH_ROW[this.piecePosition] && this.pieceTeam.isWhite())) {
-                final int behindCandidateDestinationCoordinate = this.piecePosition + (this.pieceTeam.getDirection() * 8);
+                    && ((BoardUtilities.SEVENTH_ROW[this.piecePosition] && this.pieceTeam.isBlack()) ||
+                    (BoardUtilities.SECOND_ROW[this.piecePosition] && this.pieceTeam.isWhite()))) {
+                final int behindCandidateDestinationCoordinate = this.piecePosition + (8 * this.getPieceTeam().getDirection());
 
                 if(!board.getSquare(behindCandidateDestinationCoordinate).isOccupied()
                         && !board.getSquare(candidateDestinationCoordinate).isOccupied()) {
-
-                    legalMoves.add(new MajorMove(board, this, candidateDestinationCoordinate));
+                    legalMoves.add(new PawnJump(board, this, candidateDestinationCoordinate));
                 }
             } // moves taking a piece diagonally -> edge cases column 1 and 8
             else if (currentCandidateOffset == 7
@@ -55,7 +58,7 @@ public class Pawn extends Piece {
                     final Piece pieceOnCandidate = board.getSquare(candidateDestinationCoordinate).getPiece();
 
                     if (this.pieceTeam != pieceOnCandidate.getPieceTeam()) { // only adds the move if the color of the piece is different
-                        legalMoves.add(new MajorMove(board, this, candidateDestinationCoordinate));
+                        legalMoves.add(new PawnAttackMove(board, this, candidateDestinationCoordinate));
                     }
                 }
             } else if (currentCandidateOffset == 9 // refactored for taking piece on other diagonal
@@ -66,7 +69,7 @@ public class Pawn extends Piece {
                     final Piece pieceOnCandidate = board.getSquare(candidateDestinationCoordinate).getPiece();
 
                     if (this.pieceTeam != pieceOnCandidate.getPieceTeam()) { // only adds the move if the color of the piece is different
-                        legalMoves.add(new MajorMove(board, this, candidateDestinationCoordinate));
+                        legalMoves.add(new PawnAttackMove(board, this, candidateDestinationCoordinate));
                     }
                 }
             }

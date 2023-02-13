@@ -1,8 +1,8 @@
 package net.chess.engine;
 
-import net.chess.engine.board.player.BlackPlayer;
-import net.chess.engine.board.player.Player;
-import net.chess.engine.board.player.WhitePlayer;
+import net.chess.engine.player.BlackPlayer;
+import net.chess.engine.player.Player;
+import net.chess.engine.player.WhitePlayer;
 
 public enum Team {
     WHITE {

@@ -67,21 +67,12 @@ public abstract class Move {
     }
 
     public Board execute() {
-        final Builder builder = new Board.Builder();
-        for (final Piece piece: this.board.currentPlayer().getActivePieces()) {
-            // TODO: hashcode and equals for Pieces
-            if (!this.piece.equals(piece)) {
-                builder.setPiece(piece);
-            }
-        }
-
-        for (final Piece piece: this.board.currentPlayer().getOpponent().getActivePieces()) {
-            builder.setPiece(piece);
-        }
-        // common -> moves the moved piece
+        final Board.Builder builder = new Builder();
+        this.board.currentPlayer().getActivePieces().stream().filter(piece -> !this.piece.equals(piece)).forEach(builder::setPiece);
+        this.board.currentPlayer().getOpponent().getActivePieces().forEach(builder::setPiece);
         builder.setPiece(this.piece.movePiece(this));
-        // if the ingoing Move was white, then the next player will be black -> getOpponent does this
         builder.setMoveMaker(this.board.currentPlayer().getOpponent().getTeam());
+        // builder.setMoveTransition(this);
         return builder.build();
     }
 
@@ -91,11 +82,6 @@ public abstract class Move {
                 , final Piece piece
                 , final int destinationCoordinate) {
             super(board, piece, destinationCoordinate);
-        }
-
-        @Override
-        public Board execute() {
-            return null;
         }
     }
 
@@ -211,7 +197,7 @@ public abstract class Move {
         }
     }
 
-    static abstract class CastleMove extends Move {
+    public static abstract class CastleMove extends Move {
 
         protected final Rook castleRook;
         protected final int castleRookStart;
@@ -251,21 +237,26 @@ public abstract class Move {
                 builder.setPiece(piece);
             }
             builder.setPiece(this.piece.movePiece(this));
-            builder.setPiece(new Rook(this.castleRook.getPieceTeam(), this.castleRookDestination, false));
-            builder.setMoveMaker(this.board.currentPlayer().)
+            // two pieces being moved via the same execute method
+            builder.setPiece(new Rook(this.castleRookDestination, this.castleRook.getPieceTeam()));
+            builder.setMoveMaker(this.board.currentPlayer().getOpponent().getTeam());
+            return builder.build();
         }
 
-        static final class KingSideCastleMove extends CastleMove {
+        public static final class KingSideCastleMove extends CastleMove {
 
             public KingSideCastleMove(final Board board
                     , final Piece piece
-                    , final int destinationCoordinate) {
-                super(board, piece, destinationCoordinate);
+                    , final int destinationCoordinate
+                    , final Rook castleRook
+                    , final int castleRookStart
+                    , final int castleRookDestination) {
+                super(board, piece, destinationCoordinate, castleRook, castleRookStart, castleRookDestination);
             }
 
             @Override
-            public Board execute() {
-                throw new RuntimeException("Should not be executable");
+            public String toString() {
+                return "O-O";
             }
         }
 
@@ -273,8 +264,16 @@ public abstract class Move {
 
             public QueenSideCastleMove(final Board board
                     , final Piece piece
-                    , final int destinationCoordinate) {
-                super(board, piece, destinationCoordinate);
+                    , final int destinationCoordinate
+                    , final Rook castleRook
+                    , final int castleRookStart
+                    , final int castleRookDestination) {
+                super(board, piece, destinationCoordinate, castleRook, castleRookStart, castleRookDestination);
+            }
+
+            @Override
+            public String toString() {
+                return "O-O-O";
             }
 
             @Override
@@ -292,7 +291,7 @@ public abstract class Move {
 
         @Override
         public Board execute() {
-            return null;
+            throw new RuntimeException("Should not be executable");
         }
     }
 
@@ -315,5 +314,4 @@ public abstract class Move {
             return NULL_MOVE;
         }
     }
-
 }

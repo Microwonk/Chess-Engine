@@ -1,9 +1,7 @@
-package net.chess.engine.board.player;
+package net.chess.engine.player;
 
 import net.chess.engine.board.Board;
 import net.chess.engine.board.Move;
-
-import java.util.concurrent.Future;
 
 
 // from one move to another
@@ -26,5 +24,9 @@ public class MoveTransition {
 
     public MoveStatus getMoveStatus() {
         return this.moveStatus;
+    }
+
+    public Board getTransitionBoard() {
+        return this.transitionBoard;
     }
 }

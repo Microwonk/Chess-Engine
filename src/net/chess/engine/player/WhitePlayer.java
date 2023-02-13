@@ -1,4 +1,4 @@
-package net.chess.engine.board.player;
+package net.chess.engine.player;
 
 import com.google.common.collect.ImmutableList;
 import net.chess.engine.Team;
@@ -6,10 +6,13 @@ import net.chess.engine.board.Board;
 import net.chess.engine.board.Move;
 import net.chess.engine.board.Square;
 import net.chess.engine.pieces.Piece;
+import net.chess.engine.pieces.Rook;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import static net.chess.engine.board.Move.CastleMove.*;
 
 public class WhitePlayer extends Player {
     public WhitePlayer(final Board board
@@ -36,7 +39,8 @@ public class WhitePlayer extends Player {
     }
 
     @Override
-    protected Collection<Move> calculateKingCastles(Collection<Move> playerLegals, Collection<Move> opponentLegals) {
+    protected Collection<Move> calculateKingCastles(final Collection<Move> playerLegals
+            , final Collection<Move> opponentLegals) {
 
         final List<Move> kingCastles = new ArrayList<>();
 
@@ -49,7 +53,9 @@ public class WhitePlayer extends Player {
                     if (Player.calculateAttacksOnSquare(61, opponentLegals).isEmpty()
                             && Player.calculateAttacksOnSquare(62, opponentLegals).isEmpty()
                             && rookSquare.getPiece().getPieceType().isRook()) {
-                        kingCastles.add(null); // <- castling Kingside
+                        kingCastles.add(new KingSideCastleMove(this.board, this.playerKing
+                                , 62, (Rook) rookSquare.getPiece()
+                                , rookSquare.getSquareCoordinate(), 61)); // <- castling King side
                     }
                 }
             }
@@ -59,11 +65,13 @@ public class WhitePlayer extends Player {
                 final Square rookSquare = this.board.getSquare(56);
 
                 if (rookSquare.isOccupied() && rookSquare.getPiece().isFirstMove()) {
-                    if (Player.calculateAttacksOnSquare(59, opponentLegals).isEmpty()
-                            && Player.calculateAttacksOnSquare(58, opponentLegals).isEmpty()
-                            && Player.calculateAttacksOnSquare(57, opponentLegals).isEmpty()
+                    if (Player.calculateAttacksOnSquare(58, opponentLegals).isEmpty()
+                            && Player.calculateAttacksOnSquare(59, opponentLegals).isEmpty()
                             && rookSquare.getPiece().getPieceType().isRook()) {
-                        kingCastles.add(null); // <- castling Queenside
+
+                        kingCastles.add(new QueenSideCastleMove(this.board, this.playerKing
+                                , 58, (Rook) rookSquare.getPiece()
+                                , rookSquare.getSquareCoordinate(), 59)); // <- castling Queenside
                     }
                 }
             }

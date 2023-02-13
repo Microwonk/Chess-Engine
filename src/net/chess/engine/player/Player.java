@@ -1,6 +1,7 @@
-package net.chess.engine.board.player;
+package net.chess.engine.player;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import net.chess.engine.Team;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.Move;
@@ -24,7 +25,8 @@ public abstract class Player {
 
         this.board = board;
         this.playerKing = establishKing();
-        this.legalMoves = legalMoves;
+        // concatenating the list of legal moves AND the castling moves
+        this.legalMoves = ImmutableList.copyOf(Iterables.concat(legalMoves, calculateKingCastles(legalMoves, opponentsMoves)));
         this.isInCheck = !Player.calculateAttacksOnSquare(this.playerKing.getPiecePosition(), opponentsMoves).isEmpty();
     }
 

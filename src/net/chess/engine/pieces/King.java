@@ -19,7 +19,11 @@ public class King extends Piece{
     private final static int[] POSSIBLE_MOVE_COORDINATES = {-9, -8, -7, -1, 1, 7, 8, 9};
 
     public King(final int piecePosition, final Team pieceTeam) {
-        super(piecePosition, pieceTeam, PieceType.KING);
+        super(piecePosition, pieceTeam, PieceType.KING, true);
+    }
+
+    public King(final int piecePosition, final Team pieceTeam, final boolean isFirstMove) {
+        super(piecePosition, pieceTeam, PieceType.ROOK, isFirstMove);
     }
 
     @Override

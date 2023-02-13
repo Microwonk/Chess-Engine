@@ -12,6 +12,9 @@ public abstract class Square {
     protected final int squareCoordinate;
     private static final Map<Integer, EmptySquare> EMPTY_SQUARES_CACHE = createAllPossibleEmptySquares();
 
+    public int getSquareCoordinate() {
+        return this.squareCoordinate;
+    }
 
     private static Map<Integer, EmptySquare> createAllPossibleEmptySquares() {
         final Map<Integer, EmptySquare> emptySquareMap = new HashMap<>();

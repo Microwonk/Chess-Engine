@@ -3,9 +3,9 @@ package net.chess.engine.board;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import net.chess.engine.Team;
-import net.chess.engine.board.player.BlackPlayer;
-import net.chess.engine.board.player.Player;
-import net.chess.engine.board.player.WhitePlayer;
+import net.chess.engine.player.BlackPlayer;
+import net.chess.engine.player.Player;
+import net.chess.engine.player.WhitePlayer;
 import net.chess.engine.pieces.*;
 
 import java.util.*;
@@ -138,7 +138,7 @@ public class Board {
         builder.setPiece(new Knight(57, Team.WHITE));
         builder.setPiece(new Bishop(58, Team.WHITE));
         builder.setPiece(new Queen(59, Team.WHITE));
-        builder.setPiece(new Knight(60, Team.WHITE));
+        builder.setPiece(new King(60, Team.WHITE));
         builder.setPiece(new Bishop(61, Team.WHITE));
         builder.setPiece(new Knight(62, Team.WHITE));
         builder.setPiece(new Rook(63, Team.WHITE));
