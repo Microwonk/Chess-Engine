@@ -10,9 +10,10 @@ import static net.chess.engine.board.Board.*;
 
 public abstract class Move {
 
-    final Board board;
-    final Piece piece;
-    final int destinationCoordinate;
+    protected final Board board;
+    protected final Piece piece;
+    protected final int destinationCoordinate;
+    protected final boolean isFirstMove;
 
     // error??
     public static final Move NULL_MOVE = new NullMove();
@@ -23,6 +24,15 @@ public abstract class Move {
         this.board = board;
         this.piece = piece;
         this.destinationCoordinate = destinationCoordinate;
+        this.isFirstMove = piece.isFirstMove();
+    }
+
+    private Move(final Board board
+            , final int destinationCoordinate) {
+        this.board = board;
+        this.destinationCoordinate =destinationCoordinate;
+        this.piece = null;
+        this.isFirstMove = false;
     }
 
     @Override
@@ -33,13 +43,14 @@ public abstract class Move {
         if (!(o instanceof final Move oMove)) {
             return false;
         }
-        return getDestinationCoordinate() == oMove.getDestinationCoordinate()
-                && getPiece().equals(oMove.getPiece());
+        return getCurrentCoordinate() == oMove.getCurrentCoordinate()
+               && getDestinationCoordinate() == oMove.getDestinationCoordinate()
+               && getPiece().equals(oMove.getPiece());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(board, piece, destinationCoordinate);
+        return Objects.hash(board, piece, destinationCoordinate, isFirstMove);
     }
 
     public int getDestinationCoordinate() {
@@ -83,6 +94,16 @@ public abstract class Move {
                 , final int destinationCoordinate) {
             super(board, piece, destinationCoordinate);
         }
+
+        @Override
+        public boolean equals(Object o) {
+            return this == o || o instanceof MajorMove && super.equals(o);
+        }
+
+        @Override
+        public String toString() {
+            return piece.getPieceType().toString() + BoardUtilities.getPositionCoordinate(this.destinationCoordinate);
+        }
     }
 
     public static class AttackMove extends Move {
@@ -101,6 +122,7 @@ public abstract class Move {
         public int hashCode() {
             return this.attackedPiece.hashCode() + super.hashCode();
         }
+
         @Override
         public boolean equals(final Object o) {
             if (this == o) {
