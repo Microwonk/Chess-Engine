@@ -41,8 +41,8 @@ public class GUI_Contents {
     private final Dimension CHESS_BOARD_DIMENSION = new Dimension(400, 350);
     private final Dimension SQUARE_DIMENSION = new Dimension(10, 10);
     private boolean highlightLegalMovesActive;
-    private String path;
-    private String misc;
+    public final static String path = "assets/pieces/pixel_art/";
+    public final static String misc = "assets/misc/";
 
     private final Color lightColour = new Color(196, 189, 175);
     private final Color darkColour = new Color(155, 132, 75);
@@ -52,8 +52,6 @@ public class GUI_Contents {
         this.boardDirection = BoardDirection.NORMAL;
         this.highlightLegalMovesActive = false;
         // TODO: make user choose own art
-        this.path = "assets/pieces/pixel_art/";
-        this.misc = "assets/misc/";
 
         this.frame = new JFrame("Chess by Nicolas Frey");
         this.frame.setLayout(new BorderLayout());
@@ -170,6 +168,39 @@ public class GUI_Contents {
         }
     }
 
+    public static class MoveLog {
+        private final List<Move> moves;
+
+        MoveLog() {
+            this.moves = new ArrayList<>();
+        }
+
+        public List<Move> getMoves() {
+            return this.moves;
+        }
+
+        public void addMove(final Move move) {
+            this.moves.add(move);
+        }
+
+        public int size() {
+            return this.moves.size();
+        }
+
+        public void clear() {
+            this.moves.clear();
+        }
+
+        public Move removeMove(final int index) {
+            return this.moves.remove(index);
+        }
+
+        public boolean removeMove(final Move move) {
+            return this.moves.remove(move);
+        }
+
+    }
+
     private class SquareGUI extends JPanel {
 
         private final int squareID;
@@ -195,6 +226,9 @@ public class GUI_Contents {
                             if (movedPiece == null) {
                                 sourceSquare = null;
                             }
+                            if (movedPiece != null && movedPiece.getPieceTeam() != board.currentPlayer().getTeam()) {
+                                sourceSquare = null;
+                            }
                         } else { // second Click
                             destinationSquare = board.getSquare(squareID);
                             // if the square that is clicked has the same color piece on it
@@ -209,6 +243,14 @@ public class GUI_Contents {
                                 SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
                                 return;
                             }
+
+                            if (destinationSquare.equals(sourceSquare)) {
+                                sourceSquare = null;
+                                destinationSquare = null;
+                                SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
+                                return;
+                            }
+
                             // creates the move and brings it into transition board -> visualises with the updater
                             // invokelater swingutilies
                             final Move move = Move.MoveFactory.createMove(board

@@ -24,7 +24,7 @@ public abstract class Move {
         this.board = board;
         this.piece = piece;
         this.destinationCoordinate = destinationCoordinate;
-        this.isFirstMove = piece.isFirstMove();
+        this.isFirstMove = true;
     }
 
     private Move(final Board board
