@@ -51,7 +51,7 @@ public class Rook extends Piece {
                         final Team pieceTeam = candidateDestinationSquare.getPiece().getPieceTeam();
 
                         if (this.pieceTeam != pieceTeam) {
-                            legalMoves.add(new AttackMove(board, this, candidateDestinationCoordinate, pieceAtDestination));
+                            legalMoves.add(new MajorAttackMove(board, this, candidateDestinationCoordinate, pieceAtDestination));
                         }
                         // if a piece is there it will stop looping to the next diagonal square
                         break;
@@ -67,7 +67,7 @@ public class Rook extends Piece {
     }
 
     private static boolean isEighthColumnExlusion(final int currentPosition, final int candidateOffset) {
-        return BoardUtilities.FIRST_COLUMN[currentPosition] && candidateOffset == 1;
+        return BoardUtilities.EIGHTH_COLUMN[currentPosition] && candidateOffset == 1;
     }
 
     @Override

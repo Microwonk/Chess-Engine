@@ -49,7 +49,7 @@ public class King extends Piece{
                     final Team pieceTeam = candidateDestinationSquare.getPiece().getPieceTeam();
 
                     if (this.pieceTeam != pieceTeam) {
-                        legalMoves.add(new AttackMove(board, this, candidateDestinationCoordinate, pieceAtDestination));
+                        legalMoves.add(new MajorAttackMove(board, this, candidateDestinationCoordinate, pieceAtDestination));
                     }
                 }
             }

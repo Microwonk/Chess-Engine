@@ -19,11 +19,13 @@ public class Board {
     private final WhitePlayer whitePlayer;
     private final BlackPlayer blackPlayer;
     private final Player currentPlayer;
+    private final Pawn enPassantPawn;
 
     private Board(final Builder builder) {
         this.chessBoard = createChessBoard(builder);
         this.whitePieces = calculateActivePieces(this.chessBoard, Team.WHITE);
         this.blackPieces = calculateActivePieces(this.chessBoard, Team.BLACK);
+        this.enPassantPawn = builder.enPassantPawn;
 
         final Collection<Move> whiteStandardLegalMoves = calculateLegalMoves(this.whitePieces);
         final Collection<Move> blackStandardLegalMoves = calculateLegalMoves(this.blackPieces);
@@ -102,6 +104,10 @@ public class Board {
             squares[i] = Square.createSquare(i, builder.boardConfiguration.get(i));
         }
         return ImmutableList.copyOf(squares);
+    }
+
+    public Pawn getEnPassantPawn() {
+        return enPassantPawn;
     }
 
     // creates normal Board

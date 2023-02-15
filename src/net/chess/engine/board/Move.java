@@ -15,7 +15,6 @@ public abstract class Move {
     protected final int destinationCoordinate;
     protected final boolean isFirstMove;
 
-    // error??
     public static final Move NULL_MOVE = new NullMove();
 
     private Move(final Board board
@@ -58,6 +57,7 @@ public abstract class Move {
     }
 
     public int getCurrentCoordinate() {
+        assert this.piece != null;
         return this.piece.getPiecePosition();
     }
 
@@ -87,6 +87,25 @@ public abstract class Move {
         return builder.build();
     }
 
+    public static class MajorAttackMove extends AttackMove {
+
+        public MajorAttackMove(final Board board
+                , final Piece piece
+                , final int destinationCoordinate
+                , final Piece attackedPiece) {
+            super(board, piece, destinationCoordinate, attackedPiece);
+        }
+        @Override
+        public boolean equals(Object o) {
+            return this == o || o instanceof MajorAttackMove && super.equals(o);
+        }
+
+        @Override
+        public String toString() {
+            return piece.getPieceType() + BoardUtilities.getPositionAtCoordinate(this.getCurrentCoordinate());
+        }
+    }
+
     public static final class MajorMove extends Move {
 
         public MajorMove(final Board board
@@ -102,7 +121,8 @@ public abstract class Move {
 
         @Override
         public String toString() {
-            return piece.getPieceType().toString() + BoardUtilities.getPositionCoordinate(this.destinationCoordinate);
+            assert piece != null;
+            return piece.getPieceType().toString() + BoardUtilities.getPositionAtCoordinate(this.getCurrentCoordinate());
         }
     }
 
@@ -135,11 +155,6 @@ public abstract class Move {
         }
 
         @Override
-        public Board execute() {
-            return null;
-        }
-
-        @Override
         public boolean isAttack() {
             return true;
         }
@@ -159,9 +174,15 @@ public abstract class Move {
         }
 
         @Override
-        public Board execute() {
-            return null;
+        public boolean equals(final Object o) {
+            return this == o || o instanceof PawnMove && super.equals(o);
         }
+
+        @Override
+        public String toString() {
+            return BoardUtilities.getPositionAtCoordinate(this.destinationCoordinate);
+        }
+
     }
 
     public static class PawnAttackMove extends AttackMove {
@@ -173,8 +194,14 @@ public abstract class Move {
         }
 
         @Override
-        public Board execute() {
-            return null;
+        public boolean equals(final Object o) {
+            return this == o || o instanceof PawnAttackMove && super.equals(o);
+        }
+
+        @Override
+        public String toString() {
+            return BoardUtilities.getPositionAtCoordinate(this.piece.getPiecePosition()).charAt(0)
+                    + "x" + BoardUtilities.getPositionAtCoordinate(this.destinationCoordinate);
         }
     }
 
@@ -188,7 +215,18 @@ public abstract class Move {
 
         @Override
         public Board execute() {
-            return null;
+            final Builder builder = new Builder();
+            this.board.currentPlayer().getActivePieces().stream().filter(piece -> !this.piece.equals(piece)).forEach(builder::setPiece);
+            this.board.currentPlayer().getOpponent().getActivePieces().stream().filter
+                    (piece -> !this.attackedPiece.equals(piece)).forEach(builder::setPiece);
+            builder.setPiece(this.piece.movePiece(this));
+            builder.setMoveMaker(this.board.currentPlayer().getOpponent().getTeam());
+            return builder.build();
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            return this == o || o instanceof PawnEnPassantAttack && super.equals(o);
         }
     }
 
@@ -203,14 +241,8 @@ public abstract class Move {
         @Override
         public Board execute() {
             final Builder builder = new Builder();
-            for (final Piece piece: this.board.currentPlayer().getActivePieces()) {
-                if (!this.piece.equals(piece)) {
-                    builder.setPiece(piece);
-                }
-            }
-            for (final Piece piece: this.board.currentPlayer().getOpponent().getActivePieces()) {
-                builder.setPiece(piece);
-            }
+            this.board.currentPlayer().getActivePieces().stream().filter(piece -> !this.piece.equals(piece)).forEach(builder::setPiece);
+            this.board.currentPlayer().getOpponent().getActivePieces().forEach(builder::setPiece);
             final Pawn movedPawn = (Pawn) this.piece.movePiece(this);
             builder.setPiece(movedPawn);
             builder.setEnPassantPawn(movedPawn);
@@ -250,19 +282,33 @@ public abstract class Move {
         @Override
         public Board execute() {
             final Builder builder = new Builder();
-            for (final Piece piece: this.board.currentPlayer().getActivePieces()) {
-                if (!this.piece.equals(piece) && !this.castleRook.equals(piece)) {
-                    builder.setPiece(piece);
-                }
-            }
-            for (final Piece piece: this.board.currentPlayer().getOpponent().getActivePieces()) {
-                builder.setPiece(piece);
-            }
+            this.board.currentPlayer().getActivePieces().stream().filter
+                    (piece -> !this.piece.equals(piece) && !this.castleRook.equals(piece))
+                    .forEach(builder::setPiece);
+
+            this.board.currentPlayer().getOpponent().getActivePieces()
+                    .forEach(builder::setPiece);
+
             builder.setPiece(this.piece.movePiece(this));
             // two pieces being moved via the same execute method
             builder.setPiece(new Rook(this.castleRookDestination, this.castleRook.getPieceTeam()));
             builder.setMoveMaker(this.board.currentPlayer().getOpponent().getTeam());
             return builder.build();
+        }
+
+        // intellij generated -> leaving here bcs looks interesting
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            if (!super.equals(o)) return false;
+            CastleMove that = (CastleMove) o;
+            return castleRookStart == that.castleRookStart && castleRookDestination == that.castleRookDestination && castleRook.equals(that.castleRook);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), castleRook, castleRookStart, castleRookDestination);
         }
 
         public static final class KingSideCastleMove extends CastleMove {
@@ -274,6 +320,11 @@ public abstract class Move {
                     , final int castleRookStart
                     , final int castleRookDestination) {
                 super(board, piece, destinationCoordinate, castleRook, castleRookStart, castleRookDestination);
+            }
+
+            @Override
+            public boolean equals(final Object o) {
+                return o instanceof KingSideCastleMove && super.equals(o);
             }
 
             @Override
@@ -299,8 +350,8 @@ public abstract class Move {
             }
 
             @Override
-            public Board execute() {
-                return null;
+            public boolean equals(final Object o) {
+                return o instanceof QueenSideCastleMove && super.equals(o);
             }
         }
     }
@@ -308,12 +359,18 @@ public abstract class Move {
     public static final class NullMove extends Move {
 
         public NullMove() {
-            super(null, null, -1);
+            super(null, 65);
         }
 
         @Override
         public Board execute() {
             throw new RuntimeException("Should not be executable");
+        }
+
+        // is an invalid coordinate, so that the null pointer exception for a null move is fixed
+        @Override
+        public int getCurrentCoordinate() {
+            return -1;
         }
     }
 

@@ -35,7 +35,7 @@ public class Bishop extends Piece{
 
             while(BoardUtilities.isValidSquareCoordinate(candidateDestinationCoordinate)) {
                 if (isFirstColumnExclusion(candidateDestinationCoordinate, candidateCoordinateOffset)
-                        || isEighthColumnExlusion(candidateDestinationCoordinate, candidateCoordinateOffset)) {
+                        || isEighthColumnExclusion(candidateDestinationCoordinate, candidateCoordinateOffset)) {
                     break;
                 }
 
@@ -51,7 +51,7 @@ public class Bishop extends Piece{
                         final Team pieceTeam = candidateDestinationSquare.getPiece().getPieceTeam();
 
                         if (this.pieceTeam != pieceTeam) {
-                            legalMoves.add(new AttackMove(board, this, candidateDestinationCoordinate, pieceAtDestination));
+                            legalMoves.add(new MajorAttackMove(board, this, candidateDestinationCoordinate, pieceAtDestination));
                         }
                         // if a piece is there it will stop looping to the next diagonal square
                         break;
@@ -72,8 +72,8 @@ public class Bishop extends Piece{
                 && (candidateOffset == -9 || candidateOffset == 7);
     }
 
-    private static boolean isEighthColumnExlusion(final int currentPosition, final int candidateOffset) {
-        return BoardUtilities.FIRST_COLUMN[currentPosition]
+    private static boolean isEighthColumnExclusion(final int currentPosition, final int candidateOffset) {
+        return BoardUtilities.EIGHTH_COLUMN[currentPosition]
                 && (candidateOffset == 9 || candidateOffset == -7);
     }
 

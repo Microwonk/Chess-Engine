@@ -11,8 +11,6 @@ import net.chess.engine.player.MoveTransition;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
@@ -30,7 +28,9 @@ public class GUI_Contents {
 
     private final JFrame frame;
     private final ChessBoard chessBoard;
+    private final TakenPieces takenPieces;
     private Board board;
+    private final MoveLog moveLog;
 
     private Square sourceSquare;
     private Square destinationSquare;
@@ -51,6 +51,7 @@ public class GUI_Contents {
         this.board = Board.createStandardBoard();
         this.boardDirection = BoardDirection.NORMAL;
         this.highlightLegalMovesActive = false;
+        this.moveLog = new MoveLog();
         // TODO: make user choose own art
 
         this.frame = new JFrame("Chess by Nicolas Frey");
@@ -59,6 +60,9 @@ public class GUI_Contents {
 
         this.chessBoard = new ChessBoard();
         this.frame.add(this.chessBoard, BorderLayout.CENTER);
+
+        this.takenPieces = new TakenPieces();
+        this.frame.add(this.takenPieces, BorderLayout.WEST);
 
         this.frame.setJMenuBar(makeMenuBar());
         this.frame.setIconImage(new ImageIcon(path + "WR.png").getImage());
@@ -260,12 +264,16 @@ public class GUI_Contents {
 
                             if (transition.getMoveStatus().isDone()) {
                                 board = transition.getTransitionBoard();
+                                moveLog.addMove(move);
                             }
                             sourceSquare = null;
                             destinationSquare = null;
                             movedPiece = null;
                         }
-                        SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
+                        SwingUtilities.invokeLater(() -> {
+                            takenPieces.redo(moveLog);
+                            chessBoard.drawBoard(board);
+                        });
                     }
                 }
 
@@ -309,6 +317,7 @@ public class GUI_Contents {
             }
         }
 
+        // TODO: implement not to show the moves that would leave king in check or get king in take-able position
         private void highlightLegalMoves(final Board board) {
             if (highlightLegalMovesActive) {
                 for (final Move move: pieceLegalMoves(board)) {
@@ -332,6 +341,28 @@ public class GUI_Contents {
             return Collections.emptyList();
         }
 
+        private void signifyCheck(final Board board) {
+            Color red = new Color(220, 127, 93);
+            if (board.blackPlayer().isInCheck()) {
+                if (board.blackPlayer().isInCheckMate()) {
+                    red = red.darker().darker();
+                }
+                int temp = board.blackPlayer().getPlayerKing().getPiecePosition();
+                if (temp == this.squareID) {
+                    this.setBackground(red);
+                    return;
+                }
+            }
+            if (board.whitePlayer().isInCheck()) {
+                if (board.whitePlayer().isInCheckMate()) {
+                    red = red.darker().darker();
+                }
+                int temp = board.whitePlayer().getPlayerKing().getPiecePosition();
+                if (temp == this.squareID) {
+                    this.setBackground(red);
+                }
+            }
+        }
 
         // TODO make easier?
         private Color assignSquareColour() {
@@ -353,6 +384,7 @@ public class GUI_Contents {
             setBackground(assignSquareColour());
             assignSquareIcon(board);
             highlightLegalMoves(board);
+            signifyCheck(board);
             validate();
             repaint();
         }

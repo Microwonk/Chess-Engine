@@ -20,7 +20,7 @@ public class TakenPieces extends JPanel {
 
     private final JPanel NORTH;
     private final JPanel SOUTH;
-    private static final Color PANEL_COLOUR = new Color(210, 37, 141);
+    private static final Color PANEL_COLOUR = new Color(255, 255, 255);
     private static final EtchedBorder BORDER = new EtchedBorder(EtchedBorder.RAISED);
     private static final Dimension DIMENSION = new Dimension(40, 80);
 
@@ -57,12 +57,7 @@ public class TakenPieces extends JPanel {
             }
         }
 
-        Collections.sort(whiteTakenPieces, new Comparator<Piece>() {
-            @Override
-            public int compare(Piece o1, Piece o2) {
-                return Ints.compare(o1.getPieceValue(), o2.getPieceValue());
-            }
-        });
+        whiteTakenPieces.sort((o1, o2) -> Ints.compare(o1.getPieceValue(), o2.getPieceValue()));
 
 
         for (final Move move: moveLog.getMoves()) {
@@ -77,18 +72,14 @@ public class TakenPieces extends JPanel {
             }
         }
 
-        Collections.sort(blackTakenPieces, new Comparator<Piece>() {
-            @Override
-            public int compare(Piece o1, Piece o2) {
-                return Ints.compare(o1.getPieceValue(), o2.getPieceValue());
-            }
-        });
+        blackTakenPieces.sort((o1, o2) -> Ints.compare(o1.getPieceValue(), o2.getPieceValue()));
 
         for (final Piece takenPiece: whiteTakenPieces) {
             try {
                 final BufferedImage image = ImageIO.read(new File(GUI_Contents.path
-                        + takenPiece.getPieceType().toString().charAt(0)
-                        + takenPiece));
+                        + takenPiece.getPieceTeam().toString() .charAt(0)
+                        + takenPiece.getPieceType().toString().charAt(0) + ".png"));
+
                 final ImageIcon icon = new ImageIcon(image);
                 final JLabel imageLabel = new JLabel();
                 this.SOUTH.add(imageLabel);
@@ -101,8 +92,8 @@ public class TakenPieces extends JPanel {
         for (final Piece takenPiece: blackTakenPieces) {
             try {
                 final BufferedImage image = ImageIO.read(new File(GUI_Contents.path
-                        + takenPiece.getPieceType().toString().charAt(0)
-                        + takenPiece));
+                        + takenPiece.getPieceTeam().toString().charAt(0)
+                        + takenPiece.getPieceType().toString().charAt(0) + ".png"));
                 final ImageIcon icon = new ImageIcon(image);
                 final JLabel imageLabel = new JLabel();
                 this.SOUTH.add(imageLabel);
@@ -111,6 +102,6 @@ public class TakenPieces extends JPanel {
                 e.printStackTrace();
             }
         }
-
+        validate();
     }
 }

@@ -1,5 +1,7 @@
 package net.chess.engine.board;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,30 +29,30 @@ public class BoardUtilities {
     public static final int NUM_SQUARES = 64;
     public static final int NUM_SQUARES_PER_ROW = 8;
 
-    public static final String[] RANK = initPosToRank();
-    public static Map<String, Integer> FILE = initPosToFile();
+    public static final String[] NOTATION = initNotation();
+    public static Map<String, Integer> MAPPING_TO_POS = initMapping();
 
-    private static Map<String, Integer> initPosToFile() {
-        final Map<String, Integer> toReturn = new HashMap<>();
-        String file = "";
+    private static Map<String, Integer> initMapping() {
+        final Map<String, Integer> res = new HashMap<>();
+
         for (int i = 0; i < NUM_SQUARES; i++) {
-            switch (i/NUM_SQUARES_PER_ROW) {
-                case 0: file = "A";
-                case 1: file = "B";
-                case 2: file = "C";
-                case 3: file = "D";
-                case 4: file = "E";
-                case 5: file = "F";
-                case 6: file = "G";
-                case 7: file = "H";
-            }
-            toReturn.put(file, i);
+            res.put(NOTATION[i], i);
         }
-        return toReturn;
+        return res;
     }
 
-    private static String[] initPosToRank() {
-        return null;
+    private static String[] initNotation() {
+        final String[] res = new String[64];
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < NUM_SQUARES_PER_ROW; i++) {
+            for (int j = NUM_SQUARES_PER_ROW; j > 0; j--) {
+                builder.append((char)(97 + (NUM_SQUARES_PER_ROW - j)));
+                builder.append(NUM_SQUARES_PER_ROW - i);
+                res[i*j] = builder.toString();
+                builder.delete(0, builder.length());
+            }
+        }
+        return res;
     }
 
     private BoardUtilities() {
@@ -81,11 +83,11 @@ public class BoardUtilities {
         return coordinate >= 0 && coordinate < 64;
     }
 
-    public static String getPositionCoordinate(final int position) {
-        return FILE.keySet().toArray()[position].toString();
+    public static int getPositionCoordinate(final String position) {
+        return MAPPING_TO_POS.get(position);
     }
 
     public static String getPositionAtCoordinate(final int coordinate) {
-        return RANK[coordinate];
+        return NOTATION[coordinate];
     }
 }
