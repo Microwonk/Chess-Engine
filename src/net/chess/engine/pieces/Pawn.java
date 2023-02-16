@@ -38,9 +38,16 @@ public class Pawn extends Piece {
             }
             // one in front
             if(currentCandidateOffset == 8 && !board.getSquare(candidateDestinationCoordinate).isOccupied()) {
-
-                legalMoves.add(new PawnMove(board ,this, candidateDestinationCoordinate));
+                // taking care of pawn promotions
+                if (this.pieceTeam.isPawnPromotionSquare(candidateDestinationCoordinate)) {
+                    legalMoves.add(new PawnPromotion
+                            (new PawnMove(board, this, candidateDestinationCoordinate)));
+                } else {
+                    legalMoves.add(new PawnMove
+                            (board ,this, candidateDestinationCoordinate));
+                }
             } // two in front
+
             else if (currentCandidateOffset == 16 && this.isFirstMove()
                     && ((BoardUtilities.SEVENTH_ROW[this.piecePosition] && this.pieceTeam.isBlack()) ||
                     (BoardUtilities.SECOND_ROW[this.piecePosition] && this.pieceTeam.isWhite()))) {
@@ -50,40 +57,62 @@ public class Pawn extends Piece {
                         && !board.getSquare(candidateDestinationCoordinate).isOccupied()) {
                     legalMoves.add(new PawnJump(board, this, candidateDestinationCoordinate));
                 }
-            } // moves taking a piece diagonally -> edge cases column 1 and 8
+            }
+            // moves taking a piece diagonally -> edge cases column 1 and 8
             else if (currentCandidateOffset == 7
                     && !((BoardUtilities.EIGHTH_COLUMN[this.piecePosition] && this.pieceTeam.isWhite())
                     || (BoardUtilities.FIRST_COLUMN[this.piecePosition] && this.pieceTeam.isBlack()))) {
+
                 if (board.getSquare(candidateDestinationCoordinate).isOccupied()) {
                     final Piece pieceOnCandidate = board.getSquare(candidateDestinationCoordinate).getPiece();
 
                     if (this.pieceTeam != pieceOnCandidate.getPieceTeam()) { // only adds the move if the color of the piece is different
-                        legalMoves.add(new PawnAttackMove(board, this, candidateDestinationCoordinate, pieceOnCandidate));
+                        // pawn promotion
+                        if (this.pieceTeam.isPawnPromotionSquare(candidateDestinationCoordinate)) {
+                            legalMoves.add(new PawnPromotion(new PawnAttackMove
+                                    (board, this, candidateDestinationCoordinate, pieceOnCandidate)));
+                        } else {
+                            legalMoves.add(new PawnAttackMove
+                                    (board, this, candidateDestinationCoordinate, pieceOnCandidate));
+                        }
                     }
-                } else if (board.getEnPassantPawn() != null
+                }
+                // en passant
+                else if (board.getEnPassantPawn() != null
                         && board.getEnPassantPawn().getPiecePosition()
                         == (this.piecePosition + (-this.pieceTeam.getDirection()))) { // en passant
                     final Pawn pieceOnCandidate = board.getEnPassantPawn();
+
                     if (this.pieceTeam != pieceOnCandidate.getPieceTeam()) {
                         legalMoves.add(new PawnEnPassantAttack(
                                 board, this, candidateDestinationCoordinate, pieceOnCandidate
                         ));
                     }
                 }
-            } else if (currentCandidateOffset == 9 // refactored for taking piece on other diagonal
+            }
+
+            else if (currentCandidateOffset == 9 // refactored for taking piece on other diagonal
                     && !((BoardUtilities.FIRST_COLUMN[this.piecePosition] && this.pieceTeam.isWhite())
                     || (BoardUtilities.EIGHTH_COLUMN[this.piecePosition] && this.pieceTeam.isBlack()))) {
 
                 if (board.getSquare(candidateDestinationCoordinate).isOccupied()) {
                     final Piece pieceOnCandidate = board.getSquare(candidateDestinationCoordinate).getPiece();
 
-                    if (this.pieceTeam != pieceOnCandidate.getPieceTeam()) { // only adds the move if the color of the piece is different
-                        legalMoves.add(new PawnAttackMove(board, this, candidateDestinationCoordinate, pieceOnCandidate));
+                    // pawn promotion
+                    if (this.pieceTeam.isPawnPromotionSquare(candidateDestinationCoordinate)) {
+                        legalMoves.add(new PawnPromotion(new PawnAttackMove
+                                (board, this, candidateDestinationCoordinate, pieceOnCandidate)));
+                    } else {
+                        legalMoves.add(new PawnAttackMove
+                                (board, this, candidateDestinationCoordinate, pieceOnCandidate));
                     }
-                } else if (board.getEnPassantPawn() != null
+                }
+                // en passant
+                else if (board.getEnPassantPawn() != null
                         && board.getEnPassantPawn().getPiecePosition()
                         == (this.piecePosition - (-this.pieceTeam.getDirection()))) { // en passant
                     final Pawn pieceOnCandidate = board.getEnPassantPawn();
+
                     if (this.pieceTeam != pieceOnCandidate.getPieceTeam()) {
                         legalMoves.add(new PawnEnPassantAttack(
                                 board, this, candidateDestinationCoordinate, pieceOnCandidate
@@ -103,5 +132,10 @@ public class Pawn extends Piece {
     @Override
     public String toString() {
         return PieceType.PAWN.toString();
+    }
+
+    public Piece getPromotionPiece() {
+        // for now only promotion to queen possible
+        return new Queen(this.piecePosition, this.pieceTeam, false);
     }
 }

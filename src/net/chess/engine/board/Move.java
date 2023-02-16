@@ -34,6 +34,10 @@ public abstract class Move {
         this.isFirstMove = false;
     }
 
+    public Board getBoard() {
+        return this.board;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -227,6 +231,55 @@ public abstract class Move {
         @Override
         public boolean equals(final Object o) {
             return this == o || o instanceof PawnEnPassantAttack && super.equals(o);
+        }
+    }
+
+    public static class PawnPromotion extends Move {
+
+        final Move decoratedMove;
+        final Pawn promotedPawn;
+
+        public PawnPromotion(final Move decoratedMove) {
+            super(decoratedMove.getBoard(), decoratedMove.getPiece(), decoratedMove.getDestinationCoordinate());
+            this.decoratedMove = decoratedMove;
+            this.promotedPawn = (Pawn) decoratedMove.getPiece();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return this == o || o instanceof PawnPromotion && super.equals(o);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), decoratedMove, promotedPawn);
+        }
+
+        @Override
+        public Board execute() {
+            final Board pawnMoveBoard = this.decoratedMove.execute();
+            final Builder builder = new Builder();
+
+            pawnMoveBoard.currentPlayer().getActivePieces().stream().filter(piece -> !this.promotedPawn.equals(piece)).forEach(builder::setPiece);
+            pawnMoveBoard.currentPlayer().getOpponent().getActivePieces().forEach(builder::setPiece);
+            builder.setPiece(this.promotedPawn.getPromotionPiece().movePiece(this));
+            builder.setMoveMaker(pawnMoveBoard.currentPlayer().getTeam());
+            return builder.build();
+        }
+
+        @Override
+        public boolean isAttack() {
+            return this.decoratedMove.isAttack();
+        }
+
+        @Override
+        public Piece getAttackedPiece() {
+            return this.decoratedMove.getAttackedPiece();
+        }
+
+        @Override
+        public String toString() {
+            return "";
         }
     }
 
