@@ -1,12 +1,15 @@
 package net.chess.gui;
 
 import com.google.common.collect.Lists;
+import net.chess.Main;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.BoardUtilities;
 import net.chess.engine.board.Move;
 import net.chess.engine.board.Square;
 import net.chess.engine.pieces.Piece;
+import net.chess.engine.player.MoveStatus;
 import net.chess.engine.player.MoveTransition;
+import net.chess.engine.player.Player;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -20,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static javax.swing.SwingUtilities.isLeftMouseButton;
 import static javax.swing.SwingUtilities.isRightMouseButton;
@@ -89,8 +93,15 @@ public class GUI_Contents {
         final JMenuItem exitFrame = new JMenuItem("Exit");
         exitFrame.setFont(frame.getFont());
         exitFrame.addActionListener(e -> this.frame.dispose());
+        final JMenuItem newFrame = new JMenuItem("Reset");
+        newFrame.setFont(frame.getFont());
+        newFrame.addActionListener(e -> {
+            this.board = Board.createStandardBoard();
+            chessBoard.drawBoard(board);
+        });
         fileMenu.add(openPGN);
         fileMenu.add(exitFrame);
+        fileMenu.add(newFrame);
         fileMenu.setFont(frame.getFont());
         return fileMenu;
     }
@@ -319,6 +330,7 @@ public class GUI_Contents {
 
         // TODO: implement not to show the moves that would leave king in check or get king in take-able position
         private void highlightLegalMoves(final Board board) {
+
             if (highlightLegalMovesActive) {
                 for (final Move move: pieceLegalMoves(board)) {
                     if (move.getDestinationCoordinate() == squareID) {
@@ -335,7 +347,9 @@ public class GUI_Contents {
 
         private Collection<Move> pieceLegalMoves(Board board) {
             if (movedPiece != null && movedPiece.getPieceTeam() == board.currentPlayer().getTeam()) {
-                return movedPiece.calcLegalMoves(board);
+                return movedPiece.calcLegalMoves(board).stream().filter
+                                (move -> board.currentPlayer().makeMove(move).getMoveStatus() == MoveStatus.DONE)
+                        .collect(Collectors.toList());
             }
             // if we are clicking on a piece that is not ours e.g.
             return Collections.emptyList();
