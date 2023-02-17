@@ -1,7 +1,6 @@
 package net.chess.gui;
 
 import com.google.common.collect.Lists;
-import net.chess.Main;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.BoardUtilities;
 import net.chess.engine.board.Move;
@@ -9,7 +8,6 @@ import net.chess.engine.board.Square;
 import net.chess.engine.pieces.Piece;
 import net.chess.engine.player.MoveStatus;
 import net.chess.engine.player.MoveTransition;
-import net.chess.engine.player.Player;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -77,7 +75,7 @@ public class GUI_Contents {
 
     private JMenuBar makeMenuBar() {
         final JMenuBar menuBar = new JMenuBar();
-        menuBar.setBackground(new Color(210, 37, 141));
+        menuBar.setBackground(Color.WHITE);
         menuBar.add(createFileMenu());
         menuBar.add(createSettingsMenu());
         // menuBar.setBackground(new Color(102, 175, 107));
@@ -285,6 +283,11 @@ public class GUI_Contents {
                             takenPieces.redo(moveLog);
                             chessBoard.drawBoard(board);
                         });
+                    } else if (isLeftMouseButton(e)) {
+                        sourceSquare = null;
+                        destinationSquare = null;
+                        movedPiece = null;
+                        SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
                     }
                 }
 
@@ -300,12 +303,10 @@ public class GUI_Contents {
 
                 @Override
                 public void mouseEntered(final MouseEvent e) {
-
                 }
 
                 @Override
                 public void mouseExited(final MouseEvent e) {
-
                 }
             });
             validate();
@@ -328,7 +329,6 @@ public class GUI_Contents {
             }
         }
 
-        // TODO: implement not to show the moves that would leave king in check or get king in take-able position
         private void highlightLegalMoves(final Board board) {
 
             if (highlightLegalMovesActive) {
@@ -357,12 +357,23 @@ public class GUI_Contents {
 
         private void signifyCheck(final Board board) {
             Color red = new Color(220, 127, 93);
+            /*if (board.blackPlayer().isInStalemate()) {
+                if (board.blackPlayer().getPlayerKing().getPiecePosition() == this.squareID) {
+                    this.setBackground(Color.GRAY);
+                    return;
+                }
+            }
+            if (board.whitePlayer().isInStalemate()) {
+                if (board.whitePlayer().getPlayerKing().getPiecePosition() == this.squareID) {
+                    this.setBackground(Color.GRAY);
+                    return;
+                }
+            }*/
             if (board.blackPlayer().isInCheck()) {
                 if (board.blackPlayer().isInCheckMate()) {
                     red = red.darker().darker();
                 }
-                int temp = board.blackPlayer().getPlayerKing().getPiecePosition();
-                if (temp == this.squareID) {
+                if (board.blackPlayer().getPlayerKing().getPiecePosition() == this.squareID) {
                     this.setBackground(red);
                     return;
                 }
@@ -371,8 +382,7 @@ public class GUI_Contents {
                 if (board.whitePlayer().isInCheckMate()) {
                     red = red.darker().darker();
                 }
-                int temp = board.whitePlayer().getPlayerKing().getPiecePosition();
-                if (temp == this.squareID) {
+                if (board.whitePlayer().getPlayerKing().getPiecePosition() == this.squareID) {
                     this.setBackground(red);
                 }
             }
