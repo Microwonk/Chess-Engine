@@ -1,6 +1,7 @@
 package net.chess.gui;
 
 import com.google.common.collect.Lists;
+import com.google.common.primitives.Ints;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.BoardUtilities;
 import net.chess.engine.board.Move;
@@ -11,6 +12,7 @@ import net.chess.engine.player.MoveTransition;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.border.EtchedBorder;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -23,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static javax.swing.SwingConstants.SOUTH;
 import static javax.swing.SwingUtilities.isLeftMouseButton;
 import static javax.swing.SwingUtilities.isRightMouseButton;
 
@@ -33,27 +36,33 @@ public class GUI_Contents {
     private final TakenPieces takenPieces;
     private Board board;
     private final MoveLog moveLog;
+    private final AudioHandler audioHandler;
 
     private Square sourceSquare;
     private Square destinationSquare;
     private Piece movedPiece;
     private BoardDirection boardDirection;
+    private int currentMove;
+    private boolean movingEnabled;
 
-    private final static Dimension FRAME_DIMENSION = new Dimension(600, 600);
-    private final Dimension CHESS_BOARD_DIMENSION = new Dimension(400, 350);
+    private final static Dimension FRAME_DIMENSION = new Dimension(600, 700);
+    private final Dimension CHESS_BOARD_DIMENSION = new Dimension(400, 400);
     private final Dimension SQUARE_DIMENSION = new Dimension(10, 10);
     private boolean highlightLegalMovesActive;
     public final static String path = "assets/pieces/pixel_art/";
     public final static String misc = "assets/misc/";
 
-    private final Color lightColour = new Color(196, 189, 175);
-    private final Color darkColour = new Color(155, 132, 75);
+    protected final static Color lightColour = new Color(196, 189, 175);
+    protected final static Color darkColour = new Color(155, 132, 75);
 
     public GUI_Contents() {
         this.board = Board.createStandardBoard();
         this.boardDirection = BoardDirection.NORMAL;
-        this.highlightLegalMovesActive = false;
+        this.highlightLegalMovesActive = true; // can turn off if needed
         this.moveLog = new MoveLog();
+        this.audioHandler = new AudioHandler();
+        this.currentMove = 0;
+        this.movingEnabled = true;
         // TODO: make user choose own art
 
         this.frame = new JFrame("Chess by Nicolas Frey");
@@ -64,12 +73,13 @@ public class GUI_Contents {
         this.frame.add(this.chessBoard, BorderLayout.CENTER);
 
         this.takenPieces = new TakenPieces();
-        this.frame.add(this.takenPieces, BorderLayout.WEST);
+        this.frame.add(this.takenPieces, BorderLayout.SOUTH);
 
         this.frame.setJMenuBar(makeMenuBar());
         this.frame.setIconImage(new ImageIcon(path + "WR.png").getImage());
         this.frame.setSize(FRAME_DIMENSION);
         this.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.frame.setResizable(false);
         this.frame.setVisible(true);
     }
 
@@ -78,6 +88,7 @@ public class GUI_Contents {
         menuBar.setBackground(Color.WHITE);
         menuBar.add(createFileMenu());
         menuBar.add(createSettingsMenu());
+        menuBar.add(createDebugMenu());
         // menuBar.setBackground(new Color(102, 175, 107));
         return menuBar;
     }
@@ -116,6 +127,7 @@ public class GUI_Contents {
         settingsMenu.addSeparator();
 
         final JCheckBoxMenuItem highlightingLegalMovesToggle = new JCheckBoxMenuItem("Highlight Moves");
+        highlightingLegalMovesToggle.setSelected(true);
         highlightingLegalMovesToggle.setFont(frame.getFont());
         highlightingLegalMovesToggle.addActionListener(e -> {
             highlightLegalMovesActive = highlightingLegalMovesToggle.isSelected();
@@ -124,6 +136,43 @@ public class GUI_Contents {
         settingsMenu.add(highlightingLegalMovesToggle);
         settingsMenu.setFont(frame.getFont());
         return settingsMenu;
+    }
+
+    private JMenu createDebugMenu() {
+        final JMenu debugMenu = new JMenu("Debug");
+        final JMenuItem before = new JMenuItem("<<");
+        before.addActionListener(e -> {
+            if (currentMove > 0) {
+                currentMove--;
+                chessBoard.drawBoard(this.moveLog.getMoves().get(currentMove).getBoard());
+                this.movingEnabled = false;
+            }
+        });
+        final JMenuItem after = new JMenuItem(">>");
+        after.addActionListener(e -> {
+            if (currentMove < moveLog.size()) {
+                if (currentMove == moveLog.size() - 1) {
+                    currentMove++;
+                    this.movingEnabled = true;
+                    chessBoard.drawBoard(this.board);
+                } else {
+                    currentMove++;
+                    chessBoard.drawBoard(this.moveLog.getMoves().get(currentMove).getBoard());
+                    this.movingEnabled = false;
+                }
+            }
+        });
+        final JMenuItem currentBoard = new JMenuItem("Current Playing Board");
+        currentBoard.addActionListener(e -> {
+            this.movingEnabled = true;
+            currentMove = this.moveLog.size() - 1;
+            chessBoard.drawBoard(this.board);
+        });
+        debugMenu.add(before);
+        debugMenu.add(after);
+        debugMenu.add(currentBoard);
+
+        return debugMenu;
     }
 
     public enum BoardDirection {
@@ -181,6 +230,7 @@ public class GUI_Contents {
         }
     }
 
+    //TODO cleanup
     public static class MoveLog {
         private final List<Move> moves;
 
@@ -229,6 +279,10 @@ public class GUI_Contents {
             addMouseListener(new MouseListener() {
                 @Override
                 public void mouseClicked(final MouseEvent e) {
+                    if (!movingEnabled) {
+                        return;
+                    }
+
                     if (isLeftMouseButton(e)) {
                         // first Click
                         if (sourceSquare == null) {
@@ -272,6 +326,15 @@ public class GUI_Contents {
                             final MoveTransition transition = board.currentPlayer().makeMove(move);
 
                             if (transition.getMoveStatus().isDone()) {
+                                if (move.isAttack()) {
+                                    audioHandler.playSound(1);
+                                } else if (transition.getTransitionBoard().blackPlayer().isInCheckMate()
+                                        || transition.getTransitionBoard().whitePlayer().isInCheckMate()) {
+                                    audioHandler.playSound(2);
+                                } else {
+                                    audioHandler.playSound(0);
+                                }
+                                currentMove++;
                                 board = transition.getTransitionBoard();
                                 moveLog.addMove(move);
                             }
@@ -356,7 +419,7 @@ public class GUI_Contents {
         }
 
         private void signifyCheck(final Board board) {
-            Color red = new Color(220, 127, 93);
+            Color red = new Color(152, 40, 0);
             /*if (board.blackPlayer().isInStalemate()) {
                 if (board.blackPlayer().getPlayerKing().getPiecePosition() == this.squareID) {
                     this.setBackground(Color.GRAY);
@@ -370,8 +433,8 @@ public class GUI_Contents {
                 }
             }*/
             if (board.blackPlayer().isInCheck()) {
-                if (board.blackPlayer().isInCheckMate()) {
-                    red = red.darker().darker();
+                if (!board.blackPlayer().isInCheckMate()) {
+                    red = red.brighter();
                 }
                 if (board.blackPlayer().getPlayerKing().getPiecePosition() == this.squareID) {
                     this.setBackground(red);
@@ -379,8 +442,8 @@ public class GUI_Contents {
                 }
             }
             if (board.whitePlayer().isInCheck()) {
-                if (board.whitePlayer().isInCheckMate()) {
-                    red = red.darker().darker();
+                if (!board.whitePlayer().isInCheckMate()) {
+                    red = red.brighter();
                 }
                 if (board.whitePlayer().getPlayerKing().getPiecePosition() == this.squareID) {
                     this.setBackground(red);
@@ -409,6 +472,88 @@ public class GUI_Contents {
             assignSquareIcon(board);
             highlightLegalMoves(board);
             signifyCheck(board);
+            validate();
+            repaint();
+        }
+    }
+
+    private static class TakenPieces extends JPanel {
+
+        private final JPanel WEST;
+        private final JPanel EAST;
+        private final JPanel CENTER;
+        private static final Dimension DIMENSION = new Dimension(600, 70);
+
+        public TakenPieces() {
+            super(new BorderLayout());
+            JPanel bottom = new JPanel();
+            bottom.setPreferredSize(new Dimension(600, 5));
+            this.setPreferredSize(DIMENSION);
+            this.WEST = new JPanel(new GridLayout(2,8)); // 8 * 2 -> 16 pieces
+            this.EAST = new JPanel(new GridLayout(2,8)); // 8 * 2 -> 16 pieces
+            this.CENTER = new JPanel();
+
+            this.CENTER.setSize(new Dimension(100, 65));
+
+            JLabel temp = new JLabel("Temporary");
+            this.CENTER.add(temp);
+
+            this.add(this.WEST, BorderLayout.WEST);
+            this.add(this.EAST, BorderLayout.EAST);
+            this.add(this.CENTER, BorderLayout.CENTER);
+            this.add(bottom, BorderLayout.SOUTH);
+        }
+
+        public void redo(final MoveLog moveLog) {
+            this.EAST.removeAll();
+            this.WEST.removeAll();
+
+            final List<Piece> whiteTakenPieces = new ArrayList<>();
+            final List<Piece> blackTakenPieces = new ArrayList<>();
+
+            for (final Move move: moveLog.getMoves()) {
+                if (move.isAttack()) {
+                    final Piece takenPiece = move.getAttackedPiece();
+
+                    if (takenPiece.getPieceTeam().isWhite()) {
+                        whiteTakenPieces.add(takenPiece);
+                    } else {
+                        blackTakenPieces.add(takenPiece);
+                    }
+                }
+            }
+
+            whiteTakenPieces.sort((o1, o2) -> Ints.compare(o1.getPieceValue(), o2.getPieceValue()));
+            blackTakenPieces.sort((o1, o2) -> Ints.compare(o1.getPieceValue(), o2.getPieceValue()));
+
+            for (final Piece takenPiece: whiteTakenPieces) {
+                try {
+                    final BufferedImage image = ImageIO.read(new File(path
+                            + takenPiece.getPieceTeam().toString() .charAt(0)
+                            + takenPiece.getPieceType().toString().charAt(0) + ".png"));
+
+                    final ImageIcon icon = new ImageIcon(image);
+                    final JLabel imageLabel = new JLabel(icon);
+                    this.EAST.add(imageLabel);
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            for (final Piece takenPiece: blackTakenPieces) {
+                try {
+                    final BufferedImage image = ImageIO.read(new File(path
+                            + takenPiece.getPieceTeam().toString().charAt(0)
+                            + takenPiece.getPieceType().toString().charAt(0) + ".png"));
+                    final ImageIcon icon = new ImageIcon(image);
+                    final JLabel imageLabel = new JLabel(icon);
+                    this.WEST.add(imageLabel);
+
+                } catch (final IOException e) {
+                    e.printStackTrace();
+                }
+            }
             validate();
             repaint();
         }

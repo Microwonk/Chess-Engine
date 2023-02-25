@@ -98,13 +98,15 @@ public class Pawn extends Piece {
                 if (board.getSquare(candidateDestinationCoordinate).isOccupied()) {
                     final Piece pieceOnCandidate = board.getSquare(candidateDestinationCoordinate).getPiece();
 
-                    // pawn promotion
-                    if (this.pieceTeam.isPawnPromotionSquare(candidateDestinationCoordinate)) {
-                        legalMoves.add(new PawnPromotion(new PawnAttackMove
-                                (board, this, candidateDestinationCoordinate, pieceOnCandidate)));
-                    } else {
-                        legalMoves.add(new PawnAttackMove
-                                (board, this, candidateDestinationCoordinate, pieceOnCandidate));
+                    if (this.pieceTeam != pieceOnCandidate.getPieceTeam()) {
+                        // pawn promotion
+                        if (this.pieceTeam.isPawnPromotionSquare(candidateDestinationCoordinate)) {
+                            legalMoves.add(new PawnPromotion(new PawnAttackMove
+                                    (board, this, candidateDestinationCoordinate, pieceOnCandidate)));
+                        } else {
+                            legalMoves.add(new PawnAttackMove
+                                    (board, this, candidateDestinationCoordinate, pieceOnCandidate));
+                        }
                     }
                 }
                 // en passant
