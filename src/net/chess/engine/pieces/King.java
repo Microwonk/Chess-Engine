@@ -6,6 +6,7 @@ import net.chess.engine.board.Board;
 import net.chess.engine.board.BoardUtilities;
 import net.chess.engine.board.Move;
 import net.chess.engine.board.Square;
+import net.chess.engine.player.Player;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,12 +19,22 @@ public class King extends Piece{
 
     private final static int[] POSSIBLE_MOVE_COORDINATES = {-9, -8, -7, -1, 1, 7, 8, 9};
 
+    private final boolean isCastled;
+    private final boolean isQueenSideCapable;
+    private final boolean isKingSideCapable;
+
     public King(final int piecePosition, final Team pieceTeam) {
         super(piecePosition, pieceTeam, PieceType.KING, true);
+        this.isCastled = false;
+        this.isKingSideCapable = true;
+        this.isQueenSideCapable = true;
     }
 
     public King(final int piecePosition, final Team pieceTeam, final boolean isFirstMove) {
         super(piecePosition, pieceTeam, PieceType.ROOK, isFirstMove);
+        this.isKingSideCapable = false;
+        this.isCastled = false;
+        this.isQueenSideCapable = false;
     }
 
     @Override
@@ -54,6 +65,13 @@ public class King extends Piece{
                 }
             }
         }
+        if (board != null && board.whitePlayer() != null && board.blackPlayer() != null) {
+            final Player player = pieceTeam == board.whitePlayer().getTeam() ? board.whitePlayer() : board.blackPlayer();
+            // TODO: find out why tf its empty
+            player.calculateKingCastles(player.getLegalMoves(), player.getOpponent().getLegalMoves()).forEach(System.out::println);
+            legalMoves.addAll(player.calculateKingCastles(player.getLegalMoves(), player.getOpponent().getLegalMoves()));
+
+        }
         return ImmutableList.copyOf(legalMoves);
     }
 
@@ -77,5 +95,17 @@ public class King extends Piece{
     @Override
     public String toString() {
         return PieceType.KING.toString();
+    }
+
+    public boolean isKingSideCapable() {
+        return this.isKingSideCapable;
+    }
+
+    public boolean isQueenSideCapable() {
+        return isQueenSideCapable;
+    }
+
+    public boolean isCastled() {
+        return isCastled;
     }
 }

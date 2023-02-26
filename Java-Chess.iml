@@ -8,5 +8,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="guava-31.1-jre" level="project" />
+    <orderEntry type="library" name="jaco-mp3-player-0.9.3" level="project" />
   </component>
 </module>

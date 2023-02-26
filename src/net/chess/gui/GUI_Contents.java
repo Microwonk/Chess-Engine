@@ -12,8 +12,9 @@ import net.chess.engine.player.MoveTransition;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.border.EtchedBorder;
 import java.awt.*;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
@@ -25,9 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static javax.swing.SwingConstants.SOUTH;
 import static javax.swing.SwingUtilities.isLeftMouseButton;
-import static javax.swing.SwingUtilities.isRightMouseButton;
 
 public class GUI_Contents {
 
@@ -76,11 +75,39 @@ public class GUI_Contents {
         this.frame.add(this.takenPieces, BorderLayout.SOUTH);
 
         this.frame.setJMenuBar(makeMenuBar());
+        this.frame.addKeyListener(addHotKeys());
         this.frame.setIconImage(new ImageIcon(path + "WR.png").getImage());
         this.frame.setSize(FRAME_DIMENSION);
         this.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.frame.setResizable(false);
         this.frame.setVisible(true);
+    }
+
+    // adds hot keys, can be made customizable in the future
+    private KeyListener addHotKeys() {
+        return new KeyListener() {
+            @Override
+            public void keyTyped(KeyEvent e) {
+
+            }
+
+            @Override
+            public void keyPressed(KeyEvent e) {
+                // System.out.println(e.getKeyCode()); // for finding out the hot keys KeyCode
+                switch (e.getKeyCode()) {
+                    case 37 ->  prevMove(); // left arrow
+                    case 39 -> nextMove(); // right arrow
+                    case 38 -> endBoard(); // up arrow
+                    case 40 -> beginBoard(); // down arrow
+                    case 82 -> reset(); // r key
+                }
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+
+            }
+        };
     }
 
     private JMenuBar makeMenuBar() {
@@ -89,25 +116,25 @@ public class GUI_Contents {
         menuBar.add(createFileMenu());
         menuBar.add(createSettingsMenu());
         menuBar.add(createDebugMenu());
-        // menuBar.setBackground(new Color(102, 175, 107));
         return menuBar;
     }
 
     private JMenu createFileMenu() {
         final JMenu fileMenu = new JMenu("File");
         // implementing PGN files for game loading and saving
+
         final JMenuItem openPGN = new JMenuItem("Load PGN");
         openPGN.setFont(frame.getFont());
         openPGN.addActionListener(e -> System.out.println("PGN Action babyyy"));
+
         final JMenuItem exitFrame = new JMenuItem("Exit");
         exitFrame.setFont(frame.getFont());
         exitFrame.addActionListener(e -> this.frame.dispose());
+
         final JMenuItem newFrame = new JMenuItem("Reset");
         newFrame.setFont(frame.getFont());
-        newFrame.addActionListener(e -> {
-            this.board = Board.createStandardBoard();
-            chessBoard.drawBoard(board);
-        });
+        newFrame.addActionListener(e -> reset());
+
         fileMenu.add(openPGN);
         fileMenu.add(exitFrame);
         fileMenu.add(newFrame);
@@ -140,39 +167,99 @@ public class GUI_Contents {
 
     private JMenu createDebugMenu() {
         final JMenu debugMenu = new JMenu("Debug");
+        debugMenu.setFont(frame.getFont());
+
         final JMenuItem before = new JMenuItem("<<");
-        before.addActionListener(e -> {
-            if (currentMove > 0) {
-                currentMove--;
-                chessBoard.drawBoard(this.moveLog.getMoves().get(currentMove).getBoard());
-                this.movingEnabled = false;
-            }
-        });
+        before.addActionListener(e -> prevMove());
+        before.setFont(frame.getFont());
+
         final JMenuItem after = new JMenuItem(">>");
-        after.addActionListener(e -> {
-            if (currentMove < moveLog.size()) {
-                if (currentMove == moveLog.size() - 1) {
-                    currentMove++;
-                    this.movingEnabled = true;
-                    chessBoard.drawBoard(this.board);
-                } else {
-                    currentMove++;
-                    chessBoard.drawBoard(this.moveLog.getMoves().get(currentMove).getBoard());
-                    this.movingEnabled = false;
-                }
-            }
-        });
+        after.addActionListener(e -> nextMove());
+        after.setFont(frame.getFont());
+
         final JMenuItem currentBoard = new JMenuItem("Current Playing Board");
-        currentBoard.addActionListener(e -> {
-            this.movingEnabled = true;
-            currentMove = this.moveLog.size() - 1;
-            chessBoard.drawBoard(this.board);
-        });
+        currentBoard.addActionListener(e -> endBoard());
+        currentBoard.setFont(frame.getFont());
+
+        final JMenuItem beginningBoard = new JMenuItem("Back to Beginning");
+        beginningBoard.addActionListener(e -> beginBoard());
+        beginningBoard.setFont(frame.getFont());
+
         debugMenu.add(before);
         debugMenu.add(after);
         debugMenu.add(currentBoard);
+        debugMenu.add(beginningBoard);
 
         return debugMenu;
+    }
+
+    // resets everything
+    private void reset() {
+        if (moveLog.getMoves().isEmpty()) {
+            return;
+        }
+        this.board = Board.createStandardBoard();
+        this.moveLog.clear();
+        this.takenPieces.redo(this.moveLog);
+        chessBoard.drawBoard(board);
+        audioHandler.playSound(2);
+    }
+
+    // visualizes the starting board with sound
+    private void beginBoard() {
+        if (this.moveLog.getMoves().isEmpty()) {
+            return;
+        }
+        this.movingEnabled = false;
+        currentMove = 0;
+        chessBoard.drawBoard(this.moveLog.getMoves().get(0).getBoard());
+        audioHandler.playSound(0);
+    }
+
+    // visualizes the end board with sound
+    private void endBoard() {
+        this.movingEnabled = true;
+        if (currentMove == this.moveLog.size() - 1
+                || this.moveLog.getMoves().isEmpty()) {
+            return;
+        }
+        currentMove = this.moveLog.size() - 1;
+        chessBoard.drawBoard(this.board);
+        audioHandler.playSound(0);
+    }
+
+    // visualizes the previous move with sound
+    private void prevMove() {
+        if (currentMove > 0) {
+            currentMove--;
+            chessBoard.drawBoard(this.moveLog.getMoves().get(currentMove).getBoard());
+            this.movingEnabled = false;
+            if (this.moveLog.getMoves().get(currentMove).isAttack()) {
+                audioHandler.playSound(1);
+            } else audioHandler.playSound(0);
+        }
+    }
+
+    // visualizes the next move with sound
+    private void nextMove() {
+        if (currentMove < moveLog.size()) {
+            if (currentMove == moveLog.size() - 1) {
+                if (this.moveLog.getMoves().get(currentMove).isAttack()) {
+                    audioHandler.playSound(1);
+                } else audioHandler.playSound(0);
+                currentMove++;
+                this.movingEnabled = true;
+                chessBoard.drawBoard(this.board);
+            } else {
+                if (this.moveLog.getMoves().get(currentMove).isAttack()) {
+                    audioHandler.playSound(1);
+                } else audioHandler.playSound(0);
+                currentMove++;
+                chessBoard.drawBoard(this.moveLog.getMoves().get(currentMove).getBoard());
+                this.movingEnabled = false;
+            }
+
+        }
     }
 
     public enum BoardDirection {
@@ -292,12 +379,23 @@ public class GUI_Contents {
                             // if clicked on empty square, do nothing
                             if (movedPiece == null) {
                                 sourceSquare = null;
-                            }
-                            if (movedPiece != null && movedPiece.getPieceTeam() != board.currentPlayer().getTeam()) {
+                            } else if (movedPiece.getPieceTeam() != board.currentPlayer().getTeam()) {
                                 sourceSquare = null;
                             }
-                        } else { // second Click
+                        }
+
+                        else { // second Click
                             destinationSquare = board.getSquare(squareID);
+
+                            // if same square is clicked, reset
+                            if (sourceSquare == destinationSquare) {
+                                sourceSquare = null;
+                                destinationSquare = null;
+                                movedPiece = null;
+                                SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
+                                return;
+                            }
+
                             // if the square that is clicked has the same color piece on it
                             // , it will jump into that square clicked -> quality of Life
                             if (!(destinationSquare instanceof Square.EmptySquare)
@@ -481,7 +579,6 @@ public class GUI_Contents {
 
         private final JPanel WEST;
         private final JPanel EAST;
-        private final JPanel CENTER;
         private static final Dimension DIMENSION = new Dimension(600, 70);
 
         public TakenPieces() {
@@ -491,16 +588,9 @@ public class GUI_Contents {
             this.setPreferredSize(DIMENSION);
             this.WEST = new JPanel(new GridLayout(2,8)); // 8 * 2 -> 16 pieces
             this.EAST = new JPanel(new GridLayout(2,8)); // 8 * 2 -> 16 pieces
-            this.CENTER = new JPanel();
-
-            this.CENTER.setSize(new Dimension(100, 65));
-
-            JLabel temp = new JLabel("Temporary");
-            this.CENTER.add(temp);
 
             this.add(this.WEST, BorderLayout.WEST);
             this.add(this.EAST, BorderLayout.EAST);
-            this.add(this.CENTER, BorderLayout.CENTER);
             this.add(bottom, BorderLayout.SOUTH);
         }
 

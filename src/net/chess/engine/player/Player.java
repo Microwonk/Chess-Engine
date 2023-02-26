@@ -69,6 +69,13 @@ public abstract class Player {
         return !this.isInCheck && !hasEscapeMoves();
     }
 
+    public boolean isKingSideCapable() {
+        return this.playerKing.isKingSideCapable();
+    }
+    public boolean isQueenSideCapable() {
+        return this.playerKing.isQueenSideCapable();
+    }
+
     public boolean isCastled() {
         return false;
     }
@@ -112,5 +119,5 @@ public abstract class Player {
     public abstract Collection<Piece> getActivePieces();
     public abstract Team getTeam();
     public abstract Player getOpponent();
-    protected abstract Collection<Move> calculateKingCastles(Collection<Move> playerLegals, Collection<Move> opponentLegals);
+    public abstract Collection<Move> calculateKingCastles(Collection<Move> playerLegals, Collection<Move> opponentLegals);
 }

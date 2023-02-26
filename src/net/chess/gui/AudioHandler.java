@@ -1,6 +1,6 @@
 package net.chess.gui;
 
-import javax.sound.sampled.*;
+import jaco.mp3.player.MP3Player;
 import java.io.File;
 
 public class AudioHandler {
@@ -10,17 +10,10 @@ public class AudioHandler {
         sounds = new Sound[]{Sound.MOVE, Sound.CAPTURE, Sound.MATE};
     }
 
-    void playSound(int soundType) {
+    void playSound(final int soundType) {
+        if (soundType > 2 || soundType < 0) return;
         try {
-            File f = new File("assets/pieces/sounds/" + sounds[soundType].getFile());
-            AudioInputStream audioStream = AudioSystem.getAudioInputStream(f);
-            AudioFormat format = audioStream.getFormat();
-            DataLine.Info info = new DataLine.Info(Clip.class, format);
-            Clip audioClip = (Clip) AudioSystem.getLine(info);
-            audioClip.open(audioStream);
-            audioClip.start();
-            audioClip.close();
-            audioStream.close();
+            new MP3Player(new File("assets/pieces/sounds/" + sounds[soundType].getFile())).play();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -28,9 +21,9 @@ public class AudioHandler {
 
     public enum Sound {
 
-        MOVE("move.wav"),
-        CAPTURE("capture.wav"),
-        MATE("mate.wav");
+        MOVE("move.mp3"),
+        CAPTURE("capture.mp3"),
+        MATE("mate.mp3");
 
         private final String file;
 
@@ -41,7 +34,6 @@ public class AudioHandler {
         public String getFile() {
             return this.file;
         }
-
     }
 
 }

@@ -39,7 +39,7 @@ public class WhitePlayer extends Player {
     }
 
     @Override
-    protected Collection<Move> calculateKingCastles(final Collection<Move> playerLegals
+    public Collection<Move> calculateKingCastles(final Collection<Move> playerLegals
             , final Collection<Move> opponentLegals) {
 
         final List<Move> kingCastles = new ArrayList<>();
@@ -48,7 +48,7 @@ public class WhitePlayer extends Player {
             if (!this.board.getSquare(61).isOccupied()
                     && !this.board.getSquare(62).isOccupied()) {
                 final Square rookSquare = this.board.getSquare(63);
-
+                System.out.println("a");
                 if (rookSquare.isOccupied() && rookSquare.getPiece().isFirstMove()) {
                     if (Player.calculateAttacksOnSquare(61, opponentLegals).isEmpty()
                             && Player.calculateAttacksOnSquare(62, opponentLegals).isEmpty()
@@ -65,6 +65,7 @@ public class WhitePlayer extends Player {
                 final Square rookSquare = this.board.getSquare(56);
 
                 if (rookSquare.isOccupied() && rookSquare.getPiece().isFirstMove()) {
+                    System.out.println("A");
                     if (Player.calculateAttacksOnSquare(58, opponentLegals).isEmpty()
                             && Player.calculateAttacksOnSquare(59, opponentLegals).isEmpty()
                             && rookSquare.getPiece().getPieceType().isRook()) {
