@@ -86,21 +86,7 @@ public class King extends Piece{
 
     @Override
     public King movePiece(final Move move) {
-        final King previousKing = (King) move.getPiece();
-        if (move instanceof QueenSideCastleMove || move instanceof KingSideCastleMove) {
-            return new King(move.getDestinationCoordinate()
-                    , previousKing.getPieceTeam()
-                    , false
-                    , true
-                    , false
-                    , false);
-        }
-        return new King(move.getDestinationCoordinate()
-                , move.getPiece().getPieceTeam()
-                , false
-                , move.isCastlingMove() || previousKing.isCastled
-                , previousKing.isKingSideCapable()
-                , previousKing.isQueenSideCapable());
+        return new King(move.getDestinationCoordinate(), move.getPiece().pieceTeam);
     }
 
     private static boolean isFirstColumnExclusion(final int currentPosition, final int candidateOffset) {
