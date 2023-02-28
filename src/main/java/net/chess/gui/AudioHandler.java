@@ -1,4 +1,4 @@
-package net.chess.gui;
+package main.java.net.chess.gui;
 
 import jaco.mp3.player.MP3Player;
 import java.io.File;

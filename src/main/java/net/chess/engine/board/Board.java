@@ -1,12 +1,12 @@
-package net.chess.engine.board;
+package main.java.net.chess.engine.board;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import net.chess.engine.Team;
-import net.chess.engine.player.BlackPlayer;
-import net.chess.engine.player.Player;
-import net.chess.engine.player.WhitePlayer;
-import net.chess.engine.pieces.*;
+import main.java.net.chess.engine.Team;
+import main.java.net.chess.engine.player.BlackPlayer;
+import main.java.net.chess.engine.player.Player;
+import main.java.net.chess.engine.player.WhitePlayer;
+import main.java.net.chess.engine.pieces.*;
 
 import java.util.*;
 

@@ -1,12 +1,12 @@
-package net.chess.engine.board;
+package main.java.net.chess.engine.board;
 
-import net.chess.engine.pieces.Pawn;
-import net.chess.engine.pieces.Piece;
-import net.chess.engine.pieces.Rook;
+import main.java.net.chess.engine.pieces.Pawn;
+import main.java.net.chess.engine.pieces.Piece;
+import main.java.net.chess.engine.pieces.Rook;
 
 import java.util.Objects;
 
-import static net.chess.engine.board.Board.*;
+import static main.java.net.chess.engine.board.Board.*;
 
 public abstract class Move {
 
@@ -238,11 +238,16 @@ public abstract class Move {
 
         final Move decoratedMove;
         final Pawn promotedPawn;
+        final Piece promotedToPiece;
 
-        public PawnPromotion(final Move decoratedMove) {
-            super(decoratedMove.getBoard(), decoratedMove.getPiece(), decoratedMove.getDestinationCoordinate());
+        public PawnPromotion(final Move decoratedMove
+                , final Piece promotedToPiece) {
+            super(decoratedMove.getBoard()
+                    , decoratedMove.getPiece()
+                    , decoratedMove.getDestinationCoordinate());
             this.decoratedMove = decoratedMove;
             this.promotedPawn = (Pawn) decoratedMove.getPiece();
+            this.promotedToPiece = promotedToPiece;
         }
 
         @Override
@@ -262,7 +267,7 @@ public abstract class Move {
 
             pawnMoveBoard.currentPlayer().getActivePieces().stream().filter(piece -> !this.promotedPawn.equals(piece)).forEach(builder::setPiece);
             pawnMoveBoard.currentPlayer().getOpponent().getActivePieces().forEach(builder::setPiece);
-            builder.setPiece(this.promotedPawn.getPromotionPiece().movePiece(this));
+            builder.setPiece(promotedToPiece.movePiece(this));
             builder.setMoveMaker(pawnMoveBoard.currentPlayer().getTeam());
             return builder.build();
         }
@@ -280,6 +285,10 @@ public abstract class Move {
         @Override
         public String toString() {
             return "";
+        }
+
+        public Piece getPromotedToPiece() {
+            return this.promotedToPiece;
         }
     }
 

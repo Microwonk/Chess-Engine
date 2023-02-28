@@ -1,7 +1,7 @@
 <component name="libraryTable">
   <library name="guava-31.1-jre">
     <CLASSES>
-      <root url="jar://$PROJECT_DIR$/guava-31.1-jre.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/guava-31.1-jre.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

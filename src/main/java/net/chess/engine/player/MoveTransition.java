@@ -1,7 +1,7 @@
-package net.chess.engine.player;
+package main.java.net.chess.engine.player;
 
-import net.chess.engine.board.Board;
-import net.chess.engine.board.Move;
+import main.java.net.chess.engine.board.Board;
+import main.java.net.chess.engine.board.Move;
 
 
 // from one move to another

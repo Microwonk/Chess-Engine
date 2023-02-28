@@ -1,8 +1,8 @@
-package net.chess.pgn;
+package main.java.net.chess.pgn;
 
-import net.chess.engine.board.Board;
-import net.chess.engine.board.BoardUtilities;
-import net.chess.engine.pieces.Pawn;
+import main.java.net.chess.engine.board.Board;
+import main.java.net.chess.engine.board.BoardUtilities;
+import main.java.net.chess.engine.pieces.Pawn;
 
 public class FenUtilities {
 

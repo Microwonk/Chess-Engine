@@ -1,12 +1,12 @@
-package net.chess.engine.player;
+package main.java.net.chess.engine.player;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import net.chess.engine.Team;
-import net.chess.engine.board.Board;
-import net.chess.engine.board.Move;
-import net.chess.engine.pieces.King;
-import net.chess.engine.pieces.Piece;
+import main.java.net.chess.engine.Team;
+import main.java.net.chess.engine.board.Board;
+import main.java.net.chess.engine.board.Move;
+import main.java.net.chess.engine.pieces.King;
+import main.java.net.chess.engine.pieces.Piece;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,7 +44,7 @@ public abstract class Player {
 
     private King establishKing() {
         for (final Piece piece: getActivePieces()) {
-            if (piece.getPieceType().isKing()) {
+            if (piece instanceof King) {
                 return (King) piece;
             }
         }

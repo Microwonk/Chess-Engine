@@ -1,9 +1,9 @@
-package net.chess.engine;
+package main.java.net.chess.engine;
 
-import net.chess.engine.board.BoardUtilities;
-import net.chess.engine.player.BlackPlayer;
-import net.chess.engine.player.Player;
-import net.chess.engine.player.WhitePlayer;
+import main.java.net.chess.engine.board.BoardUtilities;
+import main.java.net.chess.engine.player.BlackPlayer;
+import main.java.net.chess.engine.player.Player;
+import main.java.net.chess.engine.player.WhitePlayer;
 
 public enum Team {
     WHITE {
@@ -32,6 +32,11 @@ public enum Team {
         public boolean isPawnPromotionSquare(final int position) {
             return BoardUtilities.EIGHTH_ROW[position];
         }
+
+        @Override
+        public boolean isAboutToPromoteSquare(int position) {
+            return BoardUtilities.SEVENTH_ROW[position];
+        }
     },
     BLACK {
         @Override
@@ -59,6 +64,11 @@ public enum Team {
         public boolean isPawnPromotionSquare(final int position) {
             return BoardUtilities.FIRST_ROW[position];
         }
+
+        @Override
+        public boolean isAboutToPromoteSquare(int position) {
+            return BoardUtilities.SECOND_ROW[position];
+        }
     };
 
     public abstract int getDirection();
@@ -66,4 +76,5 @@ public enum Team {
     public abstract boolean isBlack();
     public abstract Player choosePlayer(final WhitePlayer whitePlayer, final BlackPlayer blackPlayer);
     public abstract boolean isPawnPromotionSquare(final int position);
+    public abstract boolean isAboutToPromoteSquare(final int position);
 }

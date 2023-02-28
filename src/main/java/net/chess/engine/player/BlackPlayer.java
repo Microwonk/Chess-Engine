@@ -1,19 +1,19 @@
-package net.chess.engine.player;
+package main.java.net.chess.engine.player;
 
 import com.google.common.collect.ImmutableList;
-import net.chess.engine.Team;
-import net.chess.engine.board.Board;
-import net.chess.engine.board.Move;
-import net.chess.engine.board.Square;
-import net.chess.engine.pieces.King;
-import net.chess.engine.pieces.Piece;
-import net.chess.engine.pieces.Rook;
+import main.java.net.chess.engine.Team;
+import main.java.net.chess.engine.board.Board;
+import main.java.net.chess.engine.board.Move;
+import main.java.net.chess.engine.board.Square;
+import main.java.net.chess.engine.pieces.King;
+import main.java.net.chess.engine.pieces.Piece;
+import main.java.net.chess.engine.pieces.Rook;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static net.chess.engine.board.Move.CastleMove.*;
+import static main.java.net.chess.engine.board.Move.CastleMove.*;
 
 public class BlackPlayer extends Player{
     public BlackPlayer(final Board board

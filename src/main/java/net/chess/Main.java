@@ -1,6 +1,6 @@
-package net.chess;
+package main.java.net.chess;
 
-import net.chess.gui.GUI_Contents;
+import main.java.net.chess.gui.GUI_Contents;
 
 public class Main {
 

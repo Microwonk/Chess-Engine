@@ -1,17 +1,17 @@
-package net.chess.engine.pieces;
+package main.java.net.chess.engine.pieces;
 
 import com.google.common.collect.ImmutableList;
-import net.chess.engine.Team;
-import net.chess.engine.board.Board;
-import net.chess.engine.board.BoardUtilities;
-import net.chess.engine.board.Move;
+import main.java.net.chess.engine.Team;
+import main.java.net.chess.engine.board.Board;
+import main.java.net.chess.engine.board.BoardUtilities;
+import main.java.net.chess.engine.board.Move;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 // for MajorMove and AttackingMove
-import static net.chess.engine.board.Move.*;
+import static main.java.net.chess.engine.board.Move.*;
 
 public class Pawn extends Piece {
 
@@ -40,8 +40,22 @@ public class Pawn extends Piece {
             if(currentCandidateOffset == 8 && !board.getSquare(candidateDestinationCoordinate).isOccupied()) {
                 // taking care of pawn promotions
                 if (this.pieceTeam.isPawnPromotionSquare(candidateDestinationCoordinate)) {
+
                     legalMoves.add(new PawnPromotion
-                            (new PawnMove(board, this, candidateDestinationCoordinate)));
+                            (new PawnMove(board, this, candidateDestinationCoordinate)
+                                    , new Queen(this.piecePosition, this.pieceTeam, false)));
+
+                    legalMoves.add(new PawnPromotion
+                            (new PawnMove(board, this, candidateDestinationCoordinate)
+                                    , new Rook(this.piecePosition, this.pieceTeam, false)));
+
+                    legalMoves.add(new PawnPromotion
+                            (new PawnMove(board, this, candidateDestinationCoordinate)
+                                    , new Bishop(this.piecePosition, this.pieceTeam, false)));
+
+                    legalMoves.add(new PawnPromotion
+                            (new PawnMove(board, this, candidateDestinationCoordinate)
+                                    , new Knight(this.piecePosition, this.pieceTeam, false)));
                 } else {
                     legalMoves.add(new PawnMove
                             (board ,this, candidateDestinationCoordinate));
@@ -69,8 +83,23 @@ public class Pawn extends Piece {
                     if (this.pieceTeam != pieceOnCandidate.getPieceTeam()) { // only adds the move if the color of the piece is different
                         // pawn promotion
                         if (this.pieceTeam.isPawnPromotionSquare(candidateDestinationCoordinate)) {
+
                             legalMoves.add(new PawnPromotion(new PawnAttackMove
-                                    (board, this, candidateDestinationCoordinate, pieceOnCandidate)));
+                                    (board, this, candidateDestinationCoordinate, pieceOnCandidate)
+                                    , new Queen(this.piecePosition, this.pieceTeam, false)));
+
+                            legalMoves.add(new PawnPromotion(new PawnAttackMove
+                                    (board, this, candidateDestinationCoordinate, pieceOnCandidate)
+                                    , new Rook(this.piecePosition, this.pieceTeam, false)));
+
+                            legalMoves.add(new PawnPromotion(new PawnAttackMove
+                                    (board, this, candidateDestinationCoordinate, pieceOnCandidate)
+                                    , new Bishop(this.piecePosition, this.pieceTeam, false)));
+
+                            legalMoves.add(new PawnPromotion(new PawnAttackMove
+                                    (board, this, candidateDestinationCoordinate, pieceOnCandidate)
+                                    , new Knight(this.piecePosition, this.pieceTeam, false)));
+
                         } else {
                             legalMoves.add(new PawnAttackMove
                                     (board, this, candidateDestinationCoordinate, pieceOnCandidate));
@@ -101,8 +130,24 @@ public class Pawn extends Piece {
                     if (this.pieceTeam != pieceOnCandidate.getPieceTeam()) {
                         // pawn promotion
                         if (this.pieceTeam.isPawnPromotionSquare(candidateDestinationCoordinate)) {
+
                             legalMoves.add(new PawnPromotion(new PawnAttackMove
-                                    (board, this, candidateDestinationCoordinate, pieceOnCandidate)));
+                                    (board, this, candidateDestinationCoordinate, pieceOnCandidate)
+                                    , new Queen(this.piecePosition, this.pieceTeam, false)));
+
+                            legalMoves.add(new PawnPromotion(new PawnAttackMove
+                                    (board, this, candidateDestinationCoordinate, pieceOnCandidate)
+                                    , new Bishop(this.piecePosition, this.pieceTeam, false)));
+
+                            legalMoves.add(new PawnPromotion(new PawnAttackMove
+                                    (board, this, candidateDestinationCoordinate, pieceOnCandidate)
+                                    , new Rook(this.piecePosition, this.pieceTeam, false)));
+
+                            legalMoves.add(new PawnPromotion(new PawnAttackMove
+                                    (board, this, candidateDestinationCoordinate, pieceOnCandidate)
+                                    , new Knight(this.piecePosition, this.pieceTeam, false)));
+
+
                         } else {
                             legalMoves.add(new PawnAttackMove
                                     (board, this, candidateDestinationCoordinate, pieceOnCandidate));

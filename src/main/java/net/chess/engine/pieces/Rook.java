@@ -1,18 +1,18 @@
-package net.chess.engine.pieces;
+package main.java.net.chess.engine.pieces;
 
 import com.google.common.collect.ImmutableList;
-import net.chess.engine.Team;
-import net.chess.engine.board.Board;
-import net.chess.engine.board.BoardUtilities;
-import net.chess.engine.board.Move;
-import net.chess.engine.board.Square;
+import main.java.net.chess.engine.Team;
+import main.java.net.chess.engine.board.Board;
+import main.java.net.chess.engine.board.BoardUtilities;
+import main.java.net.chess.engine.board.Move;
+import main.java.net.chess.engine.board.Square;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 // for MajorMove and AttackingMove
-import static net.chess.engine.board.Move.*;
+import static main.java.net.chess.engine.board.Move.*;
 
 public class Rook extends Piece {
 

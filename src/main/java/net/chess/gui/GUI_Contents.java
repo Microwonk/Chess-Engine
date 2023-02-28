@@ -1,14 +1,16 @@
-package net.chess.gui;
+package main.java.net.chess.gui;
 
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
-import net.chess.engine.board.Board;
-import net.chess.engine.board.BoardUtilities;
-import net.chess.engine.board.Move;
-import net.chess.engine.board.Square;
-import net.chess.engine.pieces.Piece;
-import net.chess.engine.player.MoveStatus;
-import net.chess.engine.player.MoveTransition;
+import main.java.net.chess.engine.board.Board;
+import main.java.net.chess.engine.board.BoardUtilities;
+import main.java.net.chess.engine.board.Move;
+import main.java.net.chess.engine.board.Square;
+import main.java.net.chess.engine.pieces.Bishop;
+import main.java.net.chess.engine.pieces.Pawn;
+import main.java.net.chess.engine.pieces.Piece;
+import main.java.net.chess.engine.player.MoveStatus;
+import main.java.net.chess.engine.player.MoveTransition;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -27,8 +29,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static javax.swing.SwingUtilities.isLeftMouseButton;
+import static main.java.net.chess.engine.board.Move.*;
 
 public class GUI_Contents {
+
+    // TODO: shuffling moves results in draw
 
     private final JFrame frame;
     private final ChessBoard chessBoard;
@@ -191,6 +196,13 @@ public class GUI_Contents {
         debugMenu.add(beginningBoard);
 
         return debugMenu;
+    }
+
+
+    // TODO: actual implementation of the GUI to pick the piece -> switch case
+    private PawnPromotion promotionMenu(final int destination, final Piece movedPiece) {
+        return new PawnPromotion((new PawnMove(board, movedPiece, destination))
+                , new Bishop(movedPiece.getPiecePosition(), movedPiece.getPieceTeam(), false));
     }
 
     // resets everything
@@ -416,11 +428,17 @@ public class GUI_Contents {
                                 return;
                             }
 
-                            // creates the move and brings it into transition board -> visualises with the updater
-                            // invokelater swingutilies
-                            final Move move = Move.MoveFactory.createMove(board
-                                    , sourceSquare.getSquareCoordinate()
-                                    , destinationSquare.getSquareCoordinate());
+                            final Move move;
+                            if (movedPiece.getPieceTeam().isPawnPromotionSquare(destinationSquare.getSquareCoordinate())
+                                    && movedPiece instanceof Pawn // idk if this is redundant but idc
+                                    && movedPiece.getPieceTeam().isAboutToPromoteSquare(movedPiece.getPiecePosition())) {
+                                move = promotionMenu(destinationSquare.getSquareCoordinate(), movedPiece);
+
+                            } else {
+                                move = Move.MoveFactory.createMove(board
+                                        , sourceSquare.getSquareCoordinate()
+                                        , destinationSquare.getSquareCoordinate());
+                            }
                             final MoveTransition transition = board.currentPlayer().makeMove(move);
 
                             if (transition.getMoveStatus().isDone()) {
@@ -506,11 +524,21 @@ public class GUI_Contents {
             }
         }
 
-        private Collection<Move> pieceLegalMoves(Board board) {
+        private Collection<Move> pieceLegalMoves(final Board board) {
             if (movedPiece != null && movedPiece.getPieceTeam() == board.currentPlayer().getTeam()) {
                 return movedPiece.calcLegalMoves(board).stream().filter
-                                (move -> board.currentPlayer().makeMove(move).getMoveStatus() == MoveStatus.DONE)
-                        .collect(Collectors.toList());
+                                (move -> {
+                                    if (board.currentPlayer().makeMove(move).getMoveStatus() == MoveStatus.DONE) {
+                                        if (move instanceof PawnPromotion) {
+                                            // Check if the move is a pawn promotion move
+                                            // and if so, only allow one of the four possible promotion moves
+                                            Piece promotedPiece = ((PawnPromotion) move).getPromotedToPiece();
+                                            return promotedPiece instanceof Bishop;
+                                        }
+                                        return true;
+                                    }
+                                    return false;
+                                }).collect(Collectors.toList());
             }
             // if we are clicking on a piece that is not ours e.g.
             return Collections.emptyList();

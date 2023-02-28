@@ -1,8 +1,8 @@
-package net.chess.engine.board;
+package main.java.net.chess.engine.board;
 
 // from package guava !!FIRST TIME WORKING WITH LIBRARIES
 import com.google.common.collect.ImmutableMap;
-import net.chess.engine.pieces.Piece;
+import main.java.net.chess.engine.pieces.Piece;
 
 import java.util.HashMap;
 import java.util.Map;

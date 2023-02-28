@@ -1,20 +1,20 @@
-package net.chess.engine.pieces;
+package main.java.net.chess.engine.pieces;
 
 import com.google.common.collect.ImmutableList;
-import net.chess.engine.Team;
-import net.chess.engine.board.Board;
-import net.chess.engine.board.BoardUtilities;
-import net.chess.engine.board.Move;
-import net.chess.engine.board.Square;
-import net.chess.engine.player.Player;
+import main.java.net.chess.engine.Team;
+import main.java.net.chess.engine.board.Board;
+import main.java.net.chess.engine.board.BoardUtilities;
+import main.java.net.chess.engine.board.Move;
+import main.java.net.chess.engine.board.Square;
+import main.java.net.chess.engine.player.Player;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 // for MajorMove and AttackingMove
-import static net.chess.engine.board.Move.*;
-import static net.chess.engine.board.Move.CastleMove.*;
+import static main.java.net.chess.engine.board.Move.*;
+import static main.java.net.chess.engine.board.Move.CastleMove.*;
 
 public class King extends Piece{
 
@@ -84,9 +84,10 @@ public class King extends Piece{
         return ImmutableList.copyOf(legalMoves);
     }
 
+    // TODO: need to find out why tf it doesnt see a king if i have the firstmove set to false
     @Override
     public King movePiece(final Move move) {
-        return new King(move.getDestinationCoordinate(), move.getPiece().pieceTeam);
+        return new King(move.getDestinationCoordinate(), move.getPiece().pieceTeam, false);
     }
 
     private static boolean isFirstColumnExclusion(final int currentPosition, final int candidateOffset) {
