@@ -19,7 +19,7 @@ public class Rook extends Piece {
     private final static int[] POSSIBLE_MOVE_COORDINATES = {-8, -1, 1, 8};
 
     public Rook(final int piecePosition, final Team pieceTeam) {
-        super(piecePosition, pieceTeam, PieceType.ROOK, false);
+        super(piecePosition, pieceTeam, PieceType.ROOK, true);
     }
 
     public Rook(final int piecePosition, final Team pieceTeam, final boolean isFirstMove) {

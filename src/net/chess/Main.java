@@ -1,6 +1,5 @@
 package net.chess;
 
-import net.chess.engine.board.Board;
 import net.chess.gui.GUI_Contents;
 
 public class Main {

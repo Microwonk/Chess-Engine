@@ -5,6 +5,7 @@ import net.chess.engine.Team;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.Move;
 import net.chess.engine.board.Square;
+import net.chess.engine.pieces.King;
 import net.chess.engine.pieces.Piece;
 import net.chess.engine.pieces.Rook;
 

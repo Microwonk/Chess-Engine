@@ -14,6 +14,7 @@ import java.util.List;
 
 // for MajorMove and AttackingMove
 import static net.chess.engine.board.Move.*;
+import static net.chess.engine.board.Move.CastleMove.*;
 
 public class King extends Piece{
 
@@ -35,6 +36,17 @@ public class King extends Piece{
         this.isKingSideCapable = false;
         this.isCastled = false;
         this.isQueenSideCapable = false;
+    }
+
+    public King(final int piecePosition, final Team pieceTeam
+            , final boolean isFirstMove
+            , final boolean isCastled
+            , final boolean isKingSideCapable
+            , final boolean isQueenSideCapable) {
+        super(piecePosition, pieceTeam, PieceType.ROOK, isFirstMove);
+        this.isKingSideCapable = isKingSideCapable;
+        this.isCastled = isCastled;
+        this.isQueenSideCapable = isQueenSideCapable;
     }
 
     @Override
@@ -67,17 +79,28 @@ public class King extends Piece{
         }
         if (board != null && board.whitePlayer() != null && board.blackPlayer() != null) {
             final Player player = pieceTeam == board.whitePlayer().getTeam() ? board.whitePlayer() : board.blackPlayer();
-            // TODO: find out why tf its empty
-            player.calculateKingCastles(player.getLegalMoves(), player.getOpponent().getLegalMoves()).forEach(System.out::println);
             legalMoves.addAll(player.calculateKingCastles(player.getLegalMoves(), player.getOpponent().getLegalMoves()));
-
         }
         return ImmutableList.copyOf(legalMoves);
     }
 
     @Override
-    public King movePiece(Move move) {
-        return new King(move.getDestinationCoordinate(), move.getPiece().getPieceTeam());
+    public King movePiece(final Move move) {
+        final King previousKing = (King) move.getPiece();
+        if (move instanceof QueenSideCastleMove || move instanceof KingSideCastleMove) {
+            return new King(move.getDestinationCoordinate()
+                    , previousKing.getPieceTeam()
+                    , false
+                    , true
+                    , false
+                    , false);
+        }
+        return new King(move.getDestinationCoordinate()
+                , move.getPiece().getPieceTeam()
+                , false
+                , move.isCastlingMove() || previousKing.isCastled
+                , previousKing.isKingSideCapable()
+                , previousKing.isQueenSideCapable());
     }
 
     private static boolean isFirstColumnExclusion(final int currentPosition, final int candidateOffset) {

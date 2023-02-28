@@ -601,17 +601,16 @@ public class GUI_Contents {
             final List<Piece> whiteTakenPieces = new ArrayList<>();
             final List<Piece> blackTakenPieces = new ArrayList<>();
 
-            for (final Move move: moveLog.getMoves()) {
+            moveLog.getMoves().forEach(move -> {
                 if (move.isAttack()) {
                     final Piece takenPiece = move.getAttackedPiece();
-
                     if (takenPiece.getPieceTeam().isWhite()) {
                         whiteTakenPieces.add(takenPiece);
                     } else {
                         blackTakenPieces.add(takenPiece);
                     }
                 }
-            }
+            });
 
             whiteTakenPieces.sort((o1, o2) -> Ints.compare(o1.getPieceValue(), o2.getPieceValue()));
             blackTakenPieces.sort((o1, o2) -> Ints.compare(o1.getPieceValue(), o2.getPieceValue()));
