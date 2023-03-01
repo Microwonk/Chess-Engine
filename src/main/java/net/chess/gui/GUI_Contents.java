@@ -2,13 +2,12 @@ package main.java.net.chess.gui;
 
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
+import main.java.net.chess.engine.Team;
 import main.java.net.chess.engine.board.Board;
 import main.java.net.chess.engine.board.BoardUtilities;
 import main.java.net.chess.engine.board.Move;
 import main.java.net.chess.engine.board.Square;
-import main.java.net.chess.engine.pieces.Bishop;
-import main.java.net.chess.engine.pieces.Pawn;
-import main.java.net.chess.engine.pieces.Piece;
+import main.java.net.chess.engine.pieces.*;
 import main.java.net.chess.engine.player.MoveStatus;
 import main.java.net.chess.engine.player.MoveTransition;
 
@@ -22,6 +21,7 @@ import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 
 import static javax.swing.SwingUtilities.isLeftMouseButton;
 import static main.java.net.chess.engine.board.Move.*;
+import static main.java.net.chess.engine.pieces.Piece.PieceType;
 
 public class GUI_Contents {
 
@@ -85,6 +86,7 @@ public class GUI_Contents {
         this.frame.setSize(FRAME_DIMENSION);
         this.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.frame.setResizable(false);
+        this.frame.setLocationRelativeTo(null);
         this.frame.setVisible(true);
     }
 
@@ -198,13 +200,6 @@ public class GUI_Contents {
         return debugMenu;
     }
 
-
-    // TODO: actual implementation of the GUI to pick the piece -> switch case
-    private PawnPromotion promotionMenu(final int destination, final Piece movedPiece) {
-        return new PawnPromotion((new PawnMove(board, movedPiece, destination))
-                , new Bishop(movedPiece.getPiecePosition(), movedPiece.getPieceTeam(), false));
-    }
-
     // resets everything
     private void reset() {
         if (moveLog.getMoves().isEmpty()) {
@@ -212,7 +207,7 @@ public class GUI_Contents {
         }
         this.board = Board.createStandardBoard();
         this.moveLog.clear();
-        this.takenPieces.redo(this.moveLog);
+        this.takenPieces.refresh(this.moveLog);
         chessBoard.drawBoard(board);
         audioHandler.playSound(2);
     }
@@ -242,13 +237,15 @@ public class GUI_Contents {
 
     // visualizes the previous move with sound
     private void prevMove() {
-        if (currentMove > 0) {
+        if (currentMove > 0 && this.moveLog != null && this.moveLog.size() > 0) {
             currentMove--;
             chessBoard.drawBoard(this.moveLog.getMoves().get(currentMove).getBoard());
             this.movingEnabled = false;
             if (this.moveLog.getMoves().get(currentMove).isAttack()) {
                 audioHandler.playSound(1);
             } else audioHandler.playSound(0);
+        } else {
+            this.movingEnabled = true;
         }
     }
 
@@ -432,7 +429,36 @@ public class GUI_Contents {
                             if (movedPiece.getPieceTeam().isPawnPromotionSquare(destinationSquare.getSquareCoordinate())
                                     && movedPiece instanceof Pawn // idk if this is redundant but idc
                                     && movedPiece.getPieceTeam().isAboutToPromoteSquare(movedPiece.getPiecePosition())) {
-                                move = promotionMenu(destinationSquare.getSquareCoordinate(), movedPiece);
+                                final PromotionDialog pD = new PromotionDialog(frame, movedPiece.getPieceTeam());
+                                final Piece promotionPiece;
+                                if (pD.selectedPieceType == PieceType.QUEEN) {
+                                    promotionPiece = new Queen(movedPiece.getPiecePosition()
+                                            , movedPiece.getPieceTeam()
+                                            , false);
+                                } else if (pD.selectedPieceType == PieceType.ROOK) {
+                                    promotionPiece = new Rook(movedPiece.getPiecePosition()
+                                            , movedPiece.getPieceTeam()
+                                            , false);
+                                } else if (pD.selectedPieceType == PieceType.BISHOP) {
+                                    promotionPiece = new Bishop(movedPiece.getPiecePosition()
+                                            , movedPiece.getPieceTeam()
+                                            , false);
+                                } else if (pD.selectedPieceType == PieceType.KNIGHT) {
+                                    promotionPiece = new Knight(movedPiece.getPiecePosition()
+                                            , movedPiece.getPieceTeam()
+                                            , false);
+                                } else {
+                                    // if it is "X"d away
+                                    sourceSquare = null;
+                                    destinationSquare = null;
+                                    movedPiece = null;
+                                    return;
+                                }
+                                move = new PawnPromotion(
+                                        new PawnMove(board
+                                                , movedPiece
+                                                , destinationSquare.getSquareCoordinate())
+                                        , promotionPiece);
 
                             } else {
                                 move = Move.MoveFactory.createMove(board
@@ -459,7 +485,7 @@ public class GUI_Contents {
                             movedPiece = null;
                         }
                         SwingUtilities.invokeLater(() -> {
-                            takenPieces.redo(moveLog);
+                            takenPieces.refresh(moveLog);
                             chessBoard.drawBoard(board);
                         });
                     } else if (isLeftMouseButton(e)) {
@@ -622,7 +648,7 @@ public class GUI_Contents {
             this.add(bottom, BorderLayout.SOUTH);
         }
 
-        public void redo(final MoveLog moveLog) {
+        public void refresh(final MoveLog moveLog) {
             this.EAST.removeAll();
             this.WEST.removeAll();
 
@@ -675,4 +701,67 @@ public class GUI_Contents {
             repaint();
         }
     }
+
+    private static class PromotionDialog extends JDialog {
+
+        private PieceType selectedPieceType;
+
+        public PromotionDialog(JFrame parent, Team pieceColor) {
+            super(parent, "Promotion", true);
+            final String team = pieceColor.toString().substring(0,1);
+
+            // Create buttons for each promotion piece
+            JButton queenButton = new JButton(new ImageIcon(path + team +"Q.png"));
+            JButton rookButton = new JButton(new ImageIcon(path + team +"R.png"));
+            JButton bishopButton = new JButton(new ImageIcon(path + team +"B.png"));
+            JButton knightButton = new JButton(new ImageIcon(path + team +"N.png"));
+
+            queenButton.setBackground(Color.white);
+            rookButton.setBackground(Color.white);
+            bishopButton.setBackground(Color.white);
+            knightButton.setBackground(Color.white);
+
+            queenButton.setFocusable(false);
+            rookButton.setFocusable(false);
+            bishopButton.setFocusable(false);
+            knightButton.setFocusable(false);
+
+            // Add action listeners for each button
+            queenButton.addActionListener(e -> {
+                selectedPieceType = PieceType.QUEEN;
+                dispose();
+            });
+            rookButton.addActionListener(e -> {
+                selectedPieceType = PieceType.ROOK;
+                dispose();
+            });
+            bishopButton.addActionListener(e -> {
+                selectedPieceType = PieceType.BISHOP;
+                dispose();
+            });
+            knightButton.addActionListener(e -> {
+                selectedPieceType = PieceType.KNIGHT;
+                dispose();
+            });
+
+            // Create a panel to hold the buttons
+            JPanel panel = new JPanel();
+            panel.add(queenButton);
+            panel.add(rookButton);
+            panel.add(bishopButton);
+            panel.add(knightButton);
+            this.add(panel);
+
+            // Set size and visibility
+            this.setPreferredSize(new Dimension(250, 100));
+            this.pack();
+            this.setLocationRelativeTo(parent);
+            this.setVisible(true);
+        }
+
+        public PieceType getSelectedPieceType() {
+            return this.selectedPieceType;
+        }
+    }
+
 }
