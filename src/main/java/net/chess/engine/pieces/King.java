@@ -13,7 +13,6 @@ import java.util.Collection;
 import java.util.List;
 
 // for MajorMove and AttackingMove
-import static main.java.net.chess.engine.board.Move.*;
 import static main.java.net.chess.engine.board.Move.CastleMove.*;
 
 public class King extends Piece{

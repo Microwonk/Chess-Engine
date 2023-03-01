@@ -21,7 +21,6 @@ import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.io.Serial;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -431,7 +430,7 @@ public class GUI_Contents {
                                     && movedPiece.getPieceTeam().isAboutToPromoteSquare(movedPiece.getPiecePosition())) {
                                 final PromotionDialog pD = new PromotionDialog(frame, movedPiece.getPieceTeam());
                                 final Piece promotionPiece;
-                                if (pD.selectedPieceType == PieceType.QUEEN) {
+                                if (pD.getSelectedPieceType() == PieceType.QUEEN) {
                                     promotionPiece = new Queen(movedPiece.getPiecePosition()
                                             , movedPiece.getPieceTeam()
                                             , false);
