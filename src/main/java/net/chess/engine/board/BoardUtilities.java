@@ -1,7 +1,5 @@
 package main.java.net.chess.engine.board;
 
-import com.google.common.collect.ImmutableMap;
-
 import java.util.HashMap;
 import java.util.Map;
 

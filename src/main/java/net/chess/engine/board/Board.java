@@ -1,7 +1,5 @@
 package main.java.net.chess.engine.board;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import main.java.net.chess.engine.Team;
 import main.java.net.chess.engine.player.BlackPlayer;
 import main.java.net.chess.engine.player.Player;
@@ -9,6 +7,8 @@ import main.java.net.chess.engine.player.WhitePlayer;
 import main.java.net.chess.engine.pieces.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Board {
 
@@ -78,7 +78,7 @@ public class Board {
         for (final Piece piece: pieces) {
             legalMoves.addAll(piece.calcLegalMoves(this));
         }
-        return ImmutableList.copyOf(legalMoves);
+        return Collections.unmodifiableList(legalMoves);
     }
 
     private static Collection<Piece> calculateActivePieces(final List<Square> chessBoard, final Team team) {
@@ -93,7 +93,7 @@ public class Board {
                 }
             }
         }
-        return ImmutableList.copyOf(activePieces);
+        return Collections.unmodifiableList(activePieces);
     }
 
     // get an immutable List of Squares -> chessBoard
@@ -103,7 +103,7 @@ public class Board {
         for (int i = 0; i < BoardUtilities.NUM_SQUARES; i++) {
             squares[i] = Square.createSquare(i, builder.boardConfiguration.get(i));
         }
-        return ImmutableList.copyOf(squares);
+        return Arrays.stream(squares).toList();
     }
 
     public Pawn getEnPassantPawn() {
@@ -157,9 +157,9 @@ public class Board {
         return chessBoard.get(squareCoordinate);
     }
 
-    // very complex, yoinked this straight out of stackexchange
     public Iterable<Move> getAllLegalMoves() {
-        return Iterables.unmodifiableIterable(Iterables.concat(this.whitePlayer.getLegalMoves(), this.blackPlayer.getLegalMoves()));
+        return Stream.concat(this.whitePlayer.getLegalMoves().stream()
+                , this.blackPlayer.getLegalMoves().stream()).collect(Collectors.toList());
     }
 
     // inner builder class -> directly stolen from design patterns
@@ -177,9 +177,8 @@ public class Board {
             return this;
         }
 
-        public Builder setMoveMaker(final Team nextMoveMaker) {
+        public void setMoveMaker(final Team nextMoveMaker) {
             this.nextMoveMaker = nextMoveMaker;
-            return this;
         }
 
         public Board build() {

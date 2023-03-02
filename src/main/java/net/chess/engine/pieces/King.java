@@ -1,6 +1,5 @@
 package main.java.net.chess.engine.pieces;
 
-import com.google.common.collect.ImmutableList;
 import main.java.net.chess.engine.Team;
 import main.java.net.chess.engine.board.Board;
 import main.java.net.chess.engine.board.BoardUtilities;
@@ -10,6 +9,7 @@ import main.java.net.chess.engine.player.Player;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 // for MajorMove and AttackingMove
@@ -80,13 +80,16 @@ public class King extends Piece{
             final Player player = pieceTeam == board.whitePlayer().getTeam() ? board.whitePlayer() : board.blackPlayer();
             legalMoves.addAll(player.calculateKingCastles(player.getLegalMoves(), player.getOpponent().getLegalMoves()));
         }
-        return ImmutableList.copyOf(legalMoves);
+        return Collections.unmodifiableList(legalMoves);
     }
 
-    // TODO: need to find out why tf it doesnt see a king if i have the firstmove set to false
     @Override
     public King movePiece(final Move move) {
-        return new King(move.getDestinationCoordinate(), move.getPiece().pieceTeam, false);
+        if (move instanceof CastleMove) {
+            return new King(move.getDestinationCoordinate(), move.getPiece().getPieceTeam(), false, true, false, false);
+        } else {
+            return new King(move.getDestinationCoordinate(), move.getPiece().getPieceTeam(), false);
+        }
     }
 
     private static boolean isFirstColumnExclusion(final int currentPosition, final int candidateOffset) {
@@ -111,10 +114,10 @@ public class King extends Piece{
     }
 
     public boolean isQueenSideCapable() {
-        return isQueenSideCapable;
+        return this.isQueenSideCapable;
     }
 
     public boolean isCastled() {
-        return isCastled;
+        return this.isCastled;
     }
 }

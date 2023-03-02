@@ -4,9 +4,9 @@ import main.java.net.chess.engine.board.Board;
 import main.java.net.chess.engine.board.BoardUtilities;
 import main.java.net.chess.engine.pieces.Pawn;
 
-public class FenUtilities {
+public class FenParser {
 
-    private FenUtilities() {
+    private FenParser() {
         throw new RuntimeException("NO");
     }
 

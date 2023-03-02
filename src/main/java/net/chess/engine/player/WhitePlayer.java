@@ -1,6 +1,5 @@
 package main.java.net.chess.engine.player;
 
-import com.google.common.collect.ImmutableList;
 import main.java.net.chess.engine.Team;
 import main.java.net.chess.engine.board.Board;
 import main.java.net.chess.engine.board.Move;
@@ -10,6 +9,7 @@ import main.java.net.chess.engine.pieces.Rook;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import static main.java.net.chess.engine.board.Move.CastleMove.*;
@@ -75,6 +75,6 @@ public class WhitePlayer extends Player {
                 }
             }
         }
-        return ImmutableList.copyOf(kingCastles);
+        return Collections.unmodifiableList(kingCastles);
     }
 }

@@ -1,7 +1,5 @@
 package main.java.net.chess.engine.player;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import main.java.net.chess.engine.Team;
 import main.java.net.chess.engine.board.Board;
 import main.java.net.chess.engine.board.Move;
@@ -10,7 +8,10 @@ import main.java.net.chess.engine.pieces.Piece;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class Player {
 
@@ -26,7 +27,8 @@ public abstract class Player {
         this.board = board;
         this.playerKing = establishKing();
         // concatenating the list of legal moves AND the castling moves
-        this.legalMoves = ImmutableList.copyOf(Iterables.concat(legalMoves, calculateKingCastles(legalMoves, opponentsMoves)));
+        this.legalMoves = Stream.concat(legalMoves.stream(), calculateKingCastles
+                (legalMoves, opponentsMoves).stream()).collect(Collectors.toUnmodifiableList());
         this.isInCheck = !Player.calculateAttacksOnSquare(this.playerKing.getPiecePosition(), opponentsMoves).isEmpty();
     }
 
@@ -39,7 +41,7 @@ public abstract class Player {
                 attackMoves.add(move);
             }
         }
-        return ImmutableList.copyOf(attackMoves);
+        return Collections.unmodifiableList(attackMoves);
     }
 
     private King establishKing() {

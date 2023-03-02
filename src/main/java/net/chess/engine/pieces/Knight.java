@@ -1,6 +1,5 @@
 package main.java.net.chess.engine.pieces;
 
-import com.google.common.collect.ImmutableList;
 import main.java.net.chess.engine.Team;
 import main.java.net.chess.engine.board.Board;
 import main.java.net.chess.engine.board.BoardUtilities;
@@ -9,6 +8,7 @@ import main.java.net.chess.engine.board.Square;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 // for MajorMove and AttackingMove
@@ -57,12 +57,12 @@ public class Knight extends Piece{
                 }
             }
         }
-        return ImmutableList.copyOf(legalMoves);
+        return Collections.unmodifiableList(legalMoves);
     }
 
     @Override
     public Knight movePiece(Move move) {
-        return new Knight(move.getDestinationCoordinate(), move.getPiece().getPieceTeam());
+        return new Knight(move.getDestinationCoordinate(), move.getPiece().getPieceTeam(), false);
     }
 
     private static boolean isFirstColumnExclusion(final int currentPosition, final int candidateOffset) {

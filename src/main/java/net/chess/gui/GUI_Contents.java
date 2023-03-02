@@ -1,7 +1,5 @@
 package main.java.net.chess.gui;
 
-import com.google.common.collect.Lists;
-import com.google.common.primitives.Ints;
 import main.java.net.chess.engine.Team;
 import main.java.net.chess.engine.board.Board;
 import main.java.net.chess.engine.board.BoardUtilities;
@@ -10,6 +8,7 @@ import main.java.net.chess.engine.board.Square;
 import main.java.net.chess.engine.pieces.*;
 import main.java.net.chess.engine.player.MoveStatus;
 import main.java.net.chess.engine.player.MoveTransition;
+import main.java.net.chess.pgn.FenParser;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -19,11 +18,13 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -133,6 +134,10 @@ public class GUI_Contents {
         openPGN.setFont(frame.getFont());
         openPGN.addActionListener(e -> System.out.println("PGN Action babyyy"));
 
+        final JMenuItem saveToFen = new JMenuItem("Save to Fen");
+        saveToFen.setFont(frame.getFont());
+        saveToFen.addActionListener(e -> saveGame(FenParser.parseFen(this.board), "save/", ".txt"));
+
         final JMenuItem exitFrame = new JMenuItem("Exit");
         exitFrame.setFont(frame.getFont());
         exitFrame.addActionListener(e -> this.frame.dispose());
@@ -142,10 +147,25 @@ public class GUI_Contents {
         newFrame.addActionListener(e -> reset());
 
         fileMenu.add(openPGN);
+        fileMenu.add(saveToFen);
         fileMenu.add(exitFrame);
         fileMenu.add(newFrame);
         fileMenu.setFont(frame.getFont());
         return fileMenu;
+    }
+
+    private void saveGame(final String toSave, final String savePath, final String fileType) {
+        final File saveFile = new File(savePath +
+                DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss")
+                        .format(LocalDateTime.now()) + fileType);
+        try {
+            final BufferedWriter bw = new BufferedWriter(new FileWriter(saveFile));
+            bw.write(toSave);
+            bw.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
 
     private JMenu createSettingsMenu() {
@@ -285,7 +305,9 @@ public class GUI_Contents {
         FLIPPED {
             @Override
             List<SquareGUI> traverse(List<SquareGUI> squares) {
-                return Lists.reverse(squares);
+                final List<SquareGUI> viewOnly = new ArrayList<>(squares);
+                Collections.reverse(viewOnly);
+                return Collections.unmodifiableList(viewOnly);
             }
 
             @Override
@@ -665,8 +687,8 @@ public class GUI_Contents {
                 }
             });
 
-            whiteTakenPieces.sort((o1, o2) -> Ints.compare(o1.getPieceValue(), o2.getPieceValue()));
-            blackTakenPieces.sort((o1, o2) -> Ints.compare(o1.getPieceValue(), o2.getPieceValue()));
+            whiteTakenPieces.sort(Comparator.comparingInt(Piece::getPieceValue));
+            blackTakenPieces.sort(Comparator.comparingInt(Piece::getPieceValue));
 
             for (final Piece takenPiece: whiteTakenPieces) {
                 try {

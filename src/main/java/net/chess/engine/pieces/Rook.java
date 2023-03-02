@@ -1,6 +1,5 @@
 package main.java.net.chess.engine.pieces;
 
-import com.google.common.collect.ImmutableList;
 import main.java.net.chess.engine.Team;
 import main.java.net.chess.engine.board.Board;
 import main.java.net.chess.engine.board.BoardUtilities;
@@ -9,6 +8,7 @@ import main.java.net.chess.engine.board.Square;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 // for MajorMove and AttackingMove
@@ -59,7 +59,7 @@ public class Rook extends Piece {
                 }
             }
         }
-        return ImmutableList.copyOf(legalMoves);
+        return Collections.unmodifiableList(legalMoves);
     }
 
     private static boolean isFirstColumnExclusion(final int currentPosition, final int candidateOffset) {
@@ -72,7 +72,7 @@ public class Rook extends Piece {
 
     @Override
     public Rook movePiece(Move move) {
-        return new Rook(move.getDestinationCoordinate(), move.getPiece().getPieceTeam());
+        return new Rook(move.getDestinationCoordinate(), move.getPiece().getPieceTeam(), false);
     }
 
     @Override
