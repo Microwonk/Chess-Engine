@@ -1,5 +1,6 @@
 package main.java.net.chess.gui;
 
+import main.java.net.chess.ai.Rand;
 import main.java.net.chess.engine.Team;
 import main.java.net.chess.engine.board.Board;
 import main.java.net.chess.engine.board.BoardUtilities;
@@ -50,6 +51,7 @@ public class GUI_Contents {
     private BoardDirection boardDirection;
     private int currentMove;
     private boolean movingEnabled;
+    private GameType gameType;
 
     private final static Dimension FRAME_DIMENSION = new Dimension(600, 700);
     private final Dimension CHESS_BOARD_DIMENSION = new Dimension(400, 400);
@@ -63,6 +65,7 @@ public class GUI_Contents {
 
     public GUI_Contents() {
         this.board = Board.createStandardBoard();
+        this.gameType = GameType.NORMAL;
         this.boardDirection = BoardDirection.NORMAL;
         this.highlightLegalMovesActive = true; // can turn off if needed
         this.moveLog = new MoveLog();
@@ -123,7 +126,7 @@ public class GUI_Contents {
         menuBar.setBackground(Color.WHITE);
         menuBar.add(createFileMenu());
         menuBar.add(createSettingsMenu());
-        menuBar.add(createDebugMenu());
+        menuBar.add(createGameMenu());
         return menuBar;
     }
 
@@ -192,32 +195,33 @@ public class GUI_Contents {
         return settingsMenu;
     }
 
-    private JMenu createDebugMenu() {
-        final JMenu debugMenu = new JMenu("Debug");
-        debugMenu.setFont(frame.getFont());
+    private JMenu createGameMenu() {
+        final JMenu gameMenu = new JMenu("Game");
+        final JMenuItem normal = new JMenuItem("Normal");
+        final JMenuItem random = new JMenuItem("Random");
+        final JMenuItem ai = new JMenuItem("AI");
 
-        final JMenuItem before = new JMenuItem("<<");
-        before.addActionListener(e -> prevMove());
-        before.setFont(frame.getFont());
+        gameMenu.setFont(frame.getFont());
+        normal.setFont(frame.getFont());
+        random.setFont(frame.getFont());
+        ai.setFont(frame.getFont());
 
-        final JMenuItem after = new JMenuItem(">>");
-        after.addActionListener(e -> nextMove());
-        after.setFont(frame.getFont());
+        // TODO: add picking color and stuff
+        normal.addActionListener(e -> {this.gameType = GameType.NORMAL;
+            this.board.blackPlayer().setAI(this.gameType);
+        });
+        random.addActionListener(e -> {this.gameType = GameType.RANDOM;
+                    this.board.blackPlayer().setAI(this.gameType);
+        });
+        ai.addActionListener(e -> {
+            this.gameType = GameType.AI;
+            this.board.blackPlayer().setAI(this.gameType);
+        });
 
-        final JMenuItem currentBoard = new JMenuItem("Current Playing Board");
-        currentBoard.addActionListener(e -> endBoard());
-        currentBoard.setFont(frame.getFont());
-
-        final JMenuItem beginningBoard = new JMenuItem("Back to Beginning");
-        beginningBoard.addActionListener(e -> beginBoard());
-        beginningBoard.setFont(frame.getFont());
-
-        debugMenu.add(before);
-        debugMenu.add(after);
-        debugMenu.add(currentBoard);
-        debugMenu.add(beginningBoard);
-
-        return debugMenu;
+        gameMenu.add(normal);
+        gameMenu.add(random);
+        gameMenu.add(ai);
+        return gameMenu;
     }
 
     // resets everything
@@ -305,6 +309,12 @@ public class GUI_Contents {
             }
         }
         return false;
+    }
+
+    public enum GameType {
+        NORMAL,
+        RANDOM,
+        AI;
     }
 
     public enum BoardDirection {
@@ -416,7 +426,11 @@ public class GUI_Contents {
                     if (!movingEnabled) {
                         return;
                     }
-
+                    // all temporary setup rn
+                    if (board.currentPlayer().isAI()) {
+                        System.out.println("mau");
+                        return;
+                    }
                     if (isLeftMouseButton(e)) {
                         // first Click
                         if (sourceSquare == null) {
@@ -521,6 +535,34 @@ public class GUI_Contents {
                             sourceSquare = null;
                             destinationSquare = null;
                             movedPiece = null;
+                            SwingUtilities.invokeLater(() -> {
+                                takenPieces.refresh(moveLog);
+                                chessBoard.drawBoard(board);
+                            });
+
+
+                            if (gameType != GameType.NORMAL
+                                    && !board.currentPlayer().getLegalMoves().stream().filter
+                                            (m -> board.currentPlayer().makeMove(m).getMoveStatus() == MoveStatus.DONE)
+                                    .collect(Collectors.toList()).isEmpty()) {
+                                Rand r = new Rand();
+                                final Move moveAI = r.execute(board, 0);
+                                final MoveTransition transitionAI = board.currentPlayer().makeMove(moveAI);
+
+                                if (transitionAI.getMoveStatus().isDone()) {
+                                    if (moveAI.isAttack()) {
+                                        audioHandler.playSound(1);
+                                    } else if (transitionAI.getTransitionBoard().blackPlayer().isInCheckMate()
+                                            || transitionAI.getTransitionBoard().whitePlayer().isInCheckMate()) {
+                                        audioHandler.playSound(2);
+                                    } else {
+                                        audioHandler.playSound(0);
+                                    }
+                                    currentMove++;
+                                    board = transitionAI.getTransitionBoard();
+                                    moveLog.addMove(moveAI);
+                                }
+                            }
                         }
                         SwingUtilities.invokeLater(() -> {
                             takenPieces.refresh(moveLog);

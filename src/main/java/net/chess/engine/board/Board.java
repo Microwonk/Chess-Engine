@@ -162,8 +162,12 @@ public class Board {
                 , this.blackPlayer.getLegalMoves().stream()).collect(Collectors.toList());
     }
 
-    public boolean isGameOver() {
-        return this.blackPlayer.isInCheckMate() || this.whitePlayer.isInCheckMate() || this.blackPlayer.isInStalemate() || this.whitePlayer.isInStalemate();
+    public boolean isGameOverCheckMate() {
+        return this.blackPlayer.isInCheckMate() || this.whitePlayer.isInCheckMate();
+    }
+
+    public boolean isGameOverStaleMate() {
+        return this.blackPlayer.isInStalemate() || this.whitePlayer.isInStalemate();
     }
 
     // inner builder class -> directly stolen from design patterns

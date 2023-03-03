@@ -5,6 +5,7 @@ import main.java.net.chess.engine.board.Board;
 import main.java.net.chess.engine.board.Move;
 import main.java.net.chess.engine.pieces.King;
 import main.java.net.chess.engine.pieces.Piece;
+import main.java.net.chess.gui.GUI_Contents.GameType;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,6 +20,7 @@ public abstract class Player {
     protected final King playerKing;
     protected final Collection<Move> legalMoves;
     private final boolean isInCheck;
+    private boolean isAI;
 
     Player(final Board board
             , final Collection<Move> legalMoves
@@ -30,6 +32,7 @@ public abstract class Player {
         this.legalMoves = Stream.concat(legalMoves.stream(), calculateKingCastles
                 (legalMoves, opponentsMoves).stream()).collect(Collectors.toUnmodifiableList());
         this.isInCheck = !Player.calculateAttacksOnSquare(this.playerKing.getPiecePosition(), opponentsMoves).isEmpty();
+        this.isAI = false;
     }
 
     protected static Collection<Move> calculateAttacksOnSquare(final int piecePosition
@@ -91,6 +94,13 @@ public abstract class Player {
         return false;
     }
 
+    public void setAI(final GameType type) {
+        this.isAI = type != GameType.NORMAL;
+    }
+
+    public boolean isAI() {
+        return this.isAI;
+    }
 
     public MoveTransition makeMove(final Move move) {
         if (!isMoveLegal(move)) {

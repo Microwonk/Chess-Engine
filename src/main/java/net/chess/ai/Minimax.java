@@ -24,7 +24,7 @@ public class Minimax implements AI{
                 , int beta
                 , final boolean maximizingPlayer) {
 
-            if (depth == MAX_DEPTH || board.isGameOver()) {
+            if (depth == MAX_DEPTH || board.isGameOverCheckMate()) {
                 //return board.evaluate(); // evaluate board position using heuristic function
             }
             if (maximizingPlayer) {
