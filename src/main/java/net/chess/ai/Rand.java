@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 
 public class Rand implements AI{
     @Override
-    public Move execute(Board board, int depth) {
+    public Move execute(Board board) {
         Random r = new Random();
         List<Move> legalMoves = new ArrayList<>(board.currentPlayer().getLegalMoves())
                 .stream().filter

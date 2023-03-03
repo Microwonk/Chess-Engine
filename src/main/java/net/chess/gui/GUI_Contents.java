@@ -1,5 +1,6 @@
 package main.java.net.chess.gui;
 
+import main.java.net.chess.ai.AI;
 import main.java.net.chess.ai.Rand;
 import main.java.net.chess.engine.Team;
 import main.java.net.chess.engine.board.Board;
@@ -9,6 +10,7 @@ import main.java.net.chess.engine.board.Square;
 import main.java.net.chess.engine.pieces.*;
 import main.java.net.chess.engine.player.MoveStatus;
 import main.java.net.chess.engine.player.MoveTransition;
+import main.java.net.chess.engine.player.Player;
 import main.java.net.chess.engine.player.WhitePlayer;
 import main.java.net.chess.pgn.FenParser;
 
@@ -28,13 +30,18 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import static javax.swing.SwingUtilities.isLeftMouseButton;
 import static main.java.net.chess.engine.board.Move.*;
 import static main.java.net.chess.engine.pieces.Piece.PieceType;
 
-public class GUI_Contents {
+/** Container for all the GUI Content Management and Connection of all the Components -> Singleton type
+ * @author Nicolas Frey
+ * @version 1.0
+ */
+public class GUI_Contents extends Observable {
 
     // TODO: shuffling moves results in draw
 
@@ -43,47 +50,47 @@ public class GUI_Contents {
     private final TakenPieces takenPieces;
     private Board board;
     private final MoveLog moveLog;
+    private final Game game;
     private final AudioHandler audioHandler;
+    private final static Dimension FRAME_DIMENSION = new Dimension(600, 700);
+    private final Dimension CHESS_BOARD_DIMENSION = new Dimension(400, 400);
+    private final Dimension SQUARE_DIMENSION = new Dimension(10, 10);
 
+    private Move computerMove;
     private Square sourceSquare;
     private Square destinationSquare;
     private Piece movedPiece;
     private BoardDirection boardDirection;
     private int currentMove;
     private boolean movingEnabled;
-    private GameType gameType;
-
-    private final static Dimension FRAME_DIMENSION = new Dimension(600, 700);
-    private final Dimension CHESS_BOARD_DIMENSION = new Dimension(400, 400);
-    private final Dimension SQUARE_DIMENSION = new Dimension(10, 10);
     private boolean highlightLegalMovesActive;
+
     public final static String path = "assets/pieces/pixel_art/";
     public final static String misc = "assets/misc/";
-
     protected final static Color lightColour = new Color(196, 189, 175);
     protected final static Color darkColour = new Color(155, 132, 75);
 
-    public GUI_Contents() {
+
+    // instantiating the Singleton
+    private static final GUI_Contents GUI_INSTANCE = new GUI_Contents();
+    private GUI_Contents() {
+        this.frame = new JFrame("Chess by Nicolas Frey");
         this.board = Board.createStandardBoard();
-        this.gameType = GameType.NORMAL;
         this.boardDirection = BoardDirection.NORMAL;
-        this.highlightLegalMovesActive = true; // can turn off if needed
+        this.highlightLegalMovesActive = true;
         this.moveLog = new MoveLog();
+        this.addObserver(new GameObserver());
+        this.game = new Game(this.frame, true);
         this.audioHandler = new AudioHandler();
         this.currentMove = 0;
         this.movingEnabled = true;
         // TODO: make user choose own art
-
-        this.frame = new JFrame("Chess by Nicolas Frey");
         this.frame.setLayout(new BorderLayout());
         this.frame.setFont(new Font("Minecraft", Font.BOLD, 13));
-
         this.chessBoard = new ChessBoard();
         this.frame.add(this.chessBoard, BorderLayout.CENTER);
-
         this.takenPieces = new TakenPieces();
         this.frame.add(this.takenPieces, BorderLayout.SOUTH);
-
         this.frame.setJMenuBar(makeMenuBar());
         this.frame.addKeyListener(addHotKeys());
         this.frame.setIconImage(new ImageIcon(path + "WR.png").getImage());
@@ -94,7 +101,27 @@ public class GUI_Contents {
         this.frame.setVisible(true);
     }
 
-    // adds hot keys, can be made customizable in the future
+    public static GUI_Contents get(){
+        return GUI_INSTANCE;
+    }
+
+    private Game getGame() {
+        return this.game;
+    }
+
+    private Board getGameBoard() {
+        return this.board;
+    }
+
+    public void show() {
+        GUI_Contents.get().getMoveLog().clear();
+        GUI_Contents.get().getTakenPieces().refresh(GUI_Contents.get().getMoveLog());
+        GUI_Contents.get().getChessBoard().drawBoard(GUI_Contents.get().getGameBoard());
+    }
+
+    /**
+     * @return the Configuration of the Hotkeys -> can be made into global variables so that user can customize
+     */
     private KeyListener addHotKeys() {
         return new KeyListener() {
             @Override
@@ -121,15 +148,21 @@ public class GUI_Contents {
         };
     }
 
+    /**
+     * @return GUI MenuBar
+     */
     private JMenuBar makeMenuBar() {
         final JMenuBar menuBar = new JMenuBar();
         menuBar.setBackground(Color.WHITE);
         menuBar.add(createFileMenu());
         menuBar.add(createSettingsMenu());
-        menuBar.add(createGameMenu());
+        menuBar.add(createOptionsMenu());
         return menuBar;
     }
 
+    /**
+     * @return GUI FileMenu
+     */
     private JMenu createFileMenu() {
         final JMenu fileMenu = new JMenu("File");
         // implementing PGN files for game loading and saving
@@ -158,6 +191,11 @@ public class GUI_Contents {
         return fileMenu;
     }
 
+    /**
+     * @param toSave Fen String or PGN Format Moves
+     * @param savePath path that will be saved to -> will be obsolete once database is established
+     * @param fileType .txt or .pgn depending on FEN or PGN -> will be obsolete once database is established
+     */
     private void saveGame(final String toSave, final String savePath, final String fileType) {
         final File saveFile = new File(savePath +
                 DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss")
@@ -172,6 +210,9 @@ public class GUI_Contents {
 
     }
 
+    /**
+     * @return GUI SettingsMenu
+     */
     private JMenu createSettingsMenu() {
         final JMenu settingsMenu = new JMenu("Settings");
         final JMenuItem flip = new JMenuItem("Flip Board");
@@ -195,36 +236,132 @@ public class GUI_Contents {
         return settingsMenu;
     }
 
-    private JMenu createGameMenu() {
-        final JMenu gameMenu = new JMenu("Game");
-        final JMenuItem normal = new JMenuItem("Normal");
-        final JMenuItem random = new JMenuItem("Random");
-        final JMenuItem ai = new JMenuItem("AI");
-
-        gameMenu.setFont(frame.getFont());
-        normal.setFont(frame.getFont());
-        random.setFont(frame.getFont());
-        ai.setFont(frame.getFont());
-
-        // TODO: add picking color and stuff
-        normal.addActionListener(e -> {this.gameType = GameType.NORMAL;
-            this.board.blackPlayer().setAI(this.gameType);
+    /**
+     * @return GUI OptionsMenu
+     */
+    private JMenu createOptionsMenu() {
+        final JMenu optionsMenu = new JMenu("Options");
+        final JMenuItem setupGame = new JMenuItem("Setup Game");
+        setupGame.addActionListener(e -> {
+            GUI_Contents.get().getGame().promptUser();
+            GUI_Contents.get().gameUpdate(GUI_Contents.get().getGame());
         });
-        random.addActionListener(e -> {this.gameType = GameType.RANDOM;
-                    this.board.blackPlayer().setAI(this.gameType);
-        });
-        ai.addActionListener(e -> {
-            this.gameType = GameType.AI;
-            this.board.blackPlayer().setAI(this.gameType);
-        });
+        setupGame.setFont(frame.getFont());
 
-        gameMenu.add(normal);
-        gameMenu.add(random);
-        gameMenu.add(ai);
-        return gameMenu;
+        optionsMenu.add(setupGame);
+
+        optionsMenu.setFont(frame.getFont());
+
+        return optionsMenu;
     }
 
-    // resets everything
+    /**
+     * @param game to notify all Observers
+     */
+    private void gameUpdate(final Game game) {
+        setChanged();
+        notifyObservers(game);
+    }
+
+    // TODO: Observer is deprecated -> look into PropertyChangeListener ::
+    //  https://stackoverflow.com/questions/46380073/observer-is-deprecated-in-java-9-what-should-we-use-instead-of-it
+
+    /**
+     * Game Observer
+     */
+    private static class GameObserver implements Observer {
+
+        // if current Player is AI, make the Move here instead of the GUI
+        @Override
+        public void update(final Observable o, final Object arg) {
+            if (GUI_Contents.get().getGame().isAIPlayer(GUI_Contents.get().getGameBoard().currentPlayer())
+                    && !GUI_Contents.get().getGameBoard().currentPlayer().isInCheckMate()
+                    && !GUI_Contents.get().getGameBoard().currentPlayer().isInStalemate()) {
+                // execute the AI
+                final backGroundThreadForAI thinkTank = new backGroundThreadForAI();
+                thinkTank.execute();
+
+                if (GUI_Contents.get().getGameBoard().currentPlayer().isInCheckMate()) {
+                    System.out.println("game over, " + GUI_Contents.get().getGameBoard().currentPlayer()+ " is in checkmate!");
+                }
+
+                if (GUI_Contents.get().getGameBoard().currentPlayer().isInStalemate()) {
+                    System.out.println("game over, " + GUI_Contents.get().getGameBoard().currentPlayer()+ " is in stalemate!");
+                }
+
+            }
+        }
+    }
+
+    /**
+     * SwingWorker using threads to do the work in the background instead of the thread of the gui
+     */
+    private static class backGroundThreadForAI extends SwingWorker<Move, String> {
+        private backGroundThreadForAI() {
+        }
+
+        @Override
+        protected Move doInBackground() {
+            // TODO: implement difference between random and actual algorithm
+            final AI random = new Rand();
+            return random.execute(GUI_INSTANCE.getGameBoard());
+        }
+
+        @Override
+        protected void done() {
+
+            try {
+                final Move executedMove = get();
+                GUI_Contents.get().updateComputerMove(executedMove);
+                GUI_Contents.get().updateGameBoard(GUI_Contents.get().getGameBoard().currentPlayer().makeMove(executedMove).getTransitionBoard());
+                GUI_Contents.get().getMoveLog().addMove(executedMove);
+                GUI_Contents.get().getTakenPieces().refresh(GUI_Contents.get().getMoveLog());
+                GUI_Contents.get().getChessBoard().drawBoard(GUI_Contents.get().getGameBoard());
+                GUI_Contents.get().moveMadeUpdate(PlayerType.COMPUTER);
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+            super.done();
+        }
+    }
+
+    /**
+     * @param playerType to notify the observer of the new Player-type
+     */
+    private void moveMadeUpdate(final PlayerType playerType) {
+        setChanged();
+        notifyObservers(playerType);
+    }
+
+    private ChessBoard getChessBoard() {
+        return this.chessBoard;
+    }
+
+    private TakenPieces getTakenPieces() {
+        return this.takenPieces;
+    }
+
+    private MoveLog getMoveLog() {
+        return this.moveLog;
+    }
+
+    /**
+     * @param executedMove to update the current Computer Move and keep track of it
+     */
+    public void updateComputerMove(final Move executedMove) {
+        this.computerMove = executedMove;
+    }
+
+    /**
+     * @param board Board to update Board outside of Singleton
+     */
+    public void updateGameBoard(final Board board) {
+        this.board = board;
+    }
+
+    /**
+     * removes all the moves and creates new Standard Board
+     */
     private void reset() {
         if (moveLog.getMoves().isEmpty()) {
             return;
@@ -236,7 +373,9 @@ public class GUI_Contents {
         audioHandler.playSound(2);
     }
 
-    // visualizes the starting board with sound
+    /**
+     * visualizes the starting board with sound
+     */
     private void beginBoard() {
         if (this.moveLog.getMoves().isEmpty()) {
             return;
@@ -247,7 +386,9 @@ public class GUI_Contents {
         audioHandler.playSound(0);
     }
 
-    // visualizes the end board with sound
+    /**
+     * visualizes the end board with sound
+     */
     private void endBoard() {
         this.movingEnabled = true;
         if (currentMove == this.moveLog.size() - 1
@@ -259,7 +400,9 @@ public class GUI_Contents {
         audioHandler.playSound(0);
     }
 
-    // visualizes the previous move with sound
+    /**
+     * visualizes the previous move with sound
+     */
     private void prevMove() {
         if (currentMove > 0 && this.moveLog != null && this.moveLog.size() > 0) {
             currentMove--;
@@ -273,7 +416,9 @@ public class GUI_Contents {
         }
     }
 
-    // visualizes the next move with sound
+    /**
+     * visualizes the next move with sound
+     */
     private void nextMove() {
         if (currentMove < moveLog.size()) {
             if (currentMove == moveLog.size() - 1) {
@@ -295,7 +440,14 @@ public class GUI_Contents {
         }
     }
 
+
+
     // TODO: fix this to actually figure out draw
+
+    /**
+     * @param move pass in the move to check for draw by repetition
+     * @return true if it is a move resulting in a draw
+     */
     public boolean isDrawByRepetition(final Move move) {
         int moveCount = this.currentMove;
         int repetitionCount = 0;
@@ -311,12 +463,9 @@ public class GUI_Contents {
         return false;
     }
 
-    public enum GameType {
-        NORMAL,
-        RANDOM,
-        AI;
-    }
-
+    /**
+     * Board Direction in accordance to being white or black player
+     */
     public enum BoardDirection {
         NORMAL {
             @Override
@@ -346,8 +495,11 @@ public class GUI_Contents {
         abstract BoardDirection opposite();
     }
 
-
+    /**
+     * 8x8 JPanel filled with Squares
+     */
     private class ChessBoard extends JPanel {
+
         final List<SquareGUI> boardSquares;
 
         ChessBoard() {
@@ -363,6 +515,9 @@ public class GUI_Contents {
             validate();
         }
 
+        /**
+         * @param board the Board being drawn to refresh the view
+         */
         public void drawBoard(final Board board) {
             removeAll();
             for (final SquareGUI square: boardDirection.traverse(boardSquares)) {
@@ -374,7 +529,9 @@ public class GUI_Contents {
         }
     }
 
-    //TODO cleanup
+    /**
+     * ArrayList of all Moves
+     */
     public static class MoveLog {
         private final List<Move> moves;
 
@@ -408,35 +565,45 @@ public class GUI_Contents {
 
     }
 
+    /**
+     * Computer or Human Player enum
+     */
+    protected enum PlayerType{
+        HUMAN,
+        COMPUTER;
+    }
+
+    /**
+     * A single Square on the Board
+     */
     private class SquareGUI extends JPanel {
 
         private final int squareID;
 
-        SquareGUI(final ChessBoard chessBoard
-                , final int squareID) {
+        SquareGUI(final ChessBoard chessBoard, final int squareID) {
             super(new GridBagLayout());
             this.squareID = squareID;
-            setPreferredSize(SQUARE_DIMENSION);
-            setBackground(assignSquareColour());
-            assignSquareIcon(board);
+            this.setPreferredSize(SQUARE_DIMENSION);
+            this.setBackground(assignSquareColour());
+            this.assignSquareIcon(board);
 
-            addMouseListener(new MouseListener() {
+            addMouseListener(createMouseListener());
+            validate();
+        }
+
+        /**
+         * @return MouseListener for managing moves made by GUI user
+         */
+        private MouseListener createMouseListener() {
+            return new MouseListener() {
                 @Override
                 public void mouseClicked(final MouseEvent e) {
-                    if (!movingEnabled) {
-                        return;
-                    }
-                    // all temporary setup rn
-                    if (board.currentPlayer().isAI()) {
-                        System.out.println("mau");
-                        return;
-                    }
+                    if (!movingEnabled) {return;}
                     if (isLeftMouseButton(e)) {
                         // first Click
                         if (sourceSquare == null) {
-                            sourceSquare = board.getSquare(squareID); // <- solution without using pixel measurements!
+                            sourceSquare = board.getSquare(squareID);
                             movedPiece = sourceSquare.getPiece();
-
                             // if clicked on empty square, do nothing
                             if (movedPiece == null) {
                                 sourceSquare = null;
@@ -444,10 +611,8 @@ public class GUI_Contents {
                                 sourceSquare = null;
                             }
                         }
-
                         else { // second Click
                             destinationSquare = board.getSquare(squareID);
-
                             // if same square is clicked, reset
                             if (sourceSquare == destinationSquare) {
                                 sourceSquare = null;
@@ -456,31 +621,26 @@ public class GUI_Contents {
                                 SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
                                 return;
                             }
-
                             // if the square that is clicked has the same color piece on it
                             // , it will jump into that square clicked -> quality of Life
-                            if (!(destinationSquare instanceof Square.EmptySquare)
-                                    && destinationSquare.getPiece().getPieceTeam()
-                                    == movedPiece.getPieceTeam()) {
-
+                            if (!(destinationSquare instanceof Square.EmptySquare) && destinationSquare.getPiece().getPieceTeam() == movedPiece.getPieceTeam()) {
                                 sourceSquare = board.getSquare(squareID);
                                 movedPiece = sourceSquare.getPiece();
                                 destinationSquare = null;
                                 SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
                                 return;
                             }
-
                             if (destinationSquare.equals(sourceSquare)) {
                                 sourceSquare = null;
                                 destinationSquare = null;
                                 SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
                                 return;
                             }
-
                             final Move move;
                             if (movedPiece.getPieceTeam().isPawnPromotionSquare(destinationSquare.getSquareCoordinate())
-                                    && movedPiece instanceof Pawn // idk if this is redundant but idc
+                                    && movedPiece instanceof Pawn
                                     && movedPiece.getPieceTeam().isAboutToPromoteSquare(movedPiece.getPiecePosition())) {
+
                                 final PromotionDialog pD = new PromotionDialog(frame, movedPiece.getPieceTeam());
                                 final Piece promotionPiece;
                                 if (pD.getSelectedPieceType() == PieceType.QUEEN) {
@@ -507,18 +667,13 @@ public class GUI_Contents {
                                     return;
                                 }
                                 move = new PawnPromotion(
-                                        new PawnMove(board
-                                                , movedPiece
-                                                , destinationSquare.getSquareCoordinate())
-                                        , promotionPiece);
-
+                                        new PawnMove(board, movedPiece, destinationSquare.getSquareCoordinate()), promotionPiece);
                             } else {
                                 move = Move.MoveFactory.createMove(board
                                         , sourceSquare.getSquareCoordinate()
                                         , destinationSquare.getSquareCoordinate());
                             }
                             final MoveTransition transition = board.currentPlayer().makeMove(move);
-
                             if (transition.getMoveStatus().isDone()) {
                                 if (move.isAttack()) {
                                     audioHandler.playSound(1);
@@ -535,38 +690,13 @@ public class GUI_Contents {
                             sourceSquare = null;
                             destinationSquare = null;
                             movedPiece = null;
-                            SwingUtilities.invokeLater(() -> {
-                                takenPieces.refresh(moveLog);
-                                chessBoard.drawBoard(board);
-                            });
-
-
-                            if (gameType != GameType.NORMAL
-                                    && !board.currentPlayer().getLegalMoves().stream().filter
-                                            (m -> board.currentPlayer().makeMove(m).getMoveStatus() == MoveStatus.DONE)
-                                    .collect(Collectors.toList()).isEmpty()) {
-                                Rand r = new Rand();
-                                final Move moveAI = r.execute(board, 0);
-                                final MoveTransition transitionAI = board.currentPlayer().makeMove(moveAI);
-
-                                if (transitionAI.getMoveStatus().isDone()) {
-                                    if (moveAI.isAttack()) {
-                                        audioHandler.playSound(1);
-                                    } else if (transitionAI.getTransitionBoard().blackPlayer().isInCheckMate()
-                                            || transitionAI.getTransitionBoard().whitePlayer().isInCheckMate()) {
-                                        audioHandler.playSound(2);
-                                    } else {
-                                        audioHandler.playSound(0);
-                                    }
-                                    currentMove++;
-                                    board = transitionAI.getTransitionBoard();
-                                    moveLog.addMove(moveAI);
-                                }
-                            }
                         }
                         SwingUtilities.invokeLater(() -> {
                             takenPieces.refresh(moveLog);
                             chessBoard.drawBoard(board);
+                            if (game.isAIPlayer(board.currentPlayer())) {
+                                GUI_Contents.get().moveMadeUpdate(PlayerType.HUMAN);
+                            }
                         });
                     } else if (isLeftMouseButton(e)) {
                         sourceSquare = null;
@@ -575,26 +705,15 @@ public class GUI_Contents {
                         SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
                     }
                 }
-
                 @Override
-                public void mousePressed(final MouseEvent e) {
-
-                }
-
+                public void mousePressed(final MouseEvent e) {}
                 @Override
-                public void mouseReleased(final MouseEvent e) {
-
-                }
-
+                public void mouseReleased(final MouseEvent e) {}
                 @Override
-                public void mouseEntered(final MouseEvent e) {
-                }
-
+                public void mouseEntered(final MouseEvent e) {}
                 @Override
-                public void mouseExited(final MouseEvent e) {
-                }
-            });
-            validate();
+                public void mouseExited(final MouseEvent e) {}
+            };
         }
 
         private void assignSquareIcon(final Board board) {
@@ -839,4 +958,103 @@ public class GUI_Contents {
         }
     }
 
+    private static class Game extends JDialog {
+
+        private GUI_Contents.PlayerType whitePlayerType;
+        private GUI_Contents.PlayerType blackPlayerType;
+        private JSpinner searchDepthSpinner;
+
+        private static final String HUMAN_TEXT = "Human";
+        private static final String COMPUTER_TEXT = "Computer";
+
+        // TODO: JMenu for choosing the AI to play against
+
+        public Game(final JFrame frame,
+                    final boolean modal) {
+            super(frame, modal);
+            setLocationRelativeTo(frame);
+            final JPanel myPanel = new JPanel(new GridLayout(0, 1));
+            final JRadioButton whiteHumanButton = new JRadioButton(HUMAN_TEXT);
+            final JRadioButton whiteComputerButton = new JRadioButton(COMPUTER_TEXT);
+            final JRadioButton blackHumanButton = new JRadioButton(HUMAN_TEXT);
+            final JRadioButton blackComputerButton = new JRadioButton(COMPUTER_TEXT);
+
+            whiteHumanButton.setActionCommand(HUMAN_TEXT);
+
+            final ButtonGroup whiteGroup = new ButtonGroup();
+            whiteGroup.add(whiteHumanButton);
+            whiteGroup.add(whiteComputerButton);
+            whiteHumanButton.setSelected(true);
+
+            final ButtonGroup blackGroup = new ButtonGroup();
+            blackGroup.add(blackHumanButton);
+            blackGroup.add(blackComputerButton);
+            blackHumanButton.setSelected(true);
+
+            getContentPane().add(myPanel);
+
+            myPanel.add(new JLabel("White"));
+            myPanel.add(whiteHumanButton);
+            myPanel.add(whiteComputerButton);
+            myPanel.add(new JLabel("Black"));
+            myPanel.add(blackHumanButton);
+            myPanel.add(blackComputerButton);
+            myPanel.add(new JLabel("Search"));
+
+            this.searchDepthSpinner = addLabeledSpinner(myPanel, new SpinnerNumberModel(6, 0, Integer.MAX_VALUE, 1));
+
+            final JButton cancelButton = new JButton("Cancel");
+            final JButton okButton = new JButton("OK");
+
+            okButton.addActionListener(e -> {
+                whitePlayerType = whiteComputerButton.isSelected() ? GUI_Contents.PlayerType.COMPUTER : GUI_Contents.PlayerType.HUMAN;
+                blackPlayerType = blackComputerButton.isSelected() ? GUI_Contents.PlayerType.COMPUTER : GUI_Contents.PlayerType.HUMAN;
+                Game.this.setVisible(false);
+            });
+
+            cancelButton.addActionListener(e -> {
+                System.out.println("Cancel");
+                Game.this.setVisible(false);
+            });
+
+            myPanel.add(cancelButton);
+            myPanel.add(okButton);
+
+            pack();
+            setVisible(false);
+        }
+
+        void promptUser() {
+            setVisible(true);
+            repaint();
+        }
+
+        boolean isAIPlayer(final Player player) {
+            if(player.getTeam() == Team.WHITE) {
+                return getWhitePlayerType() == GUI_Contents.PlayerType.COMPUTER;
+            }
+            return getBlackPlayerType() == GUI_Contents.PlayerType.COMPUTER;
+        }
+
+        GUI_Contents.PlayerType getWhitePlayerType() {return this.whitePlayerType;}
+
+        GUI_Contents.PlayerType getBlackPlayerType() {return this.blackPlayerType;}
+
+        private static JSpinner addLabeledSpinner(final Container c, final SpinnerModel model) {
+            final JLabel l = new JLabel("Search Depth");
+            c.add(l);
+            final JSpinner spinner = new JSpinner(model);
+            l.setLabelFor(spinner);
+            c.add(spinner);
+            return spinner;
+        }
+
+        int getSearchDepth() {
+            return (Integer)this.searchDepthSpinner.getValue();
+        }
+    }
 }
+
+
+
+
