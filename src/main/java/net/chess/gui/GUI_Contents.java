@@ -8,6 +8,7 @@ import main.java.net.chess.engine.board.Square;
 import main.java.net.chess.engine.pieces.*;
 import main.java.net.chess.engine.player.MoveStatus;
 import main.java.net.chess.engine.player.MoveTransition;
+import main.java.net.chess.engine.player.WhitePlayer;
 import main.java.net.chess.pgn.FenParser;
 
 import javax.imageio.ImageIO;
@@ -288,6 +289,22 @@ public class GUI_Contents {
             }
 
         }
+    }
+
+    // TODO: fix this to actually figure out draw
+    public boolean isDrawByRepetition(final Move move) {
+        int moveCount = this.currentMove;
+        int repetitionCount = 0;
+        for (int i = 0; i < moveCount; i++) {
+            if (i % 2 == (board.currentPlayer() instanceof WhitePlayer ? Team.WHITE : Team.BLACK).ordinal()
+                    && this.moveLog.getMoves().get(i).equals(move)) {
+                repetitionCount++;
+                if (repetitionCount >= 3) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public enum BoardDirection {
@@ -593,33 +610,28 @@ public class GUI_Contents {
 
         private void signifyCheck(final Board board) {
             Color red = new Color(152, 40, 0);
-            /*if (board.blackPlayer().isInStalemate()) {
-                if (board.blackPlayer().getPlayerKing().getPiecePosition() == this.squareID) {
-                    this.setBackground(Color.GRAY);
-                    return;
-                }
-            }
-            if (board.whitePlayer().isInStalemate()) {
-                if (board.whitePlayer().getPlayerKing().getPiecePosition() == this.squareID) {
-                    this.setBackground(Color.GRAY);
-                    return;
-                }
-            }*/
+
             if (board.blackPlayer().isInCheck()) {
                 if (!board.blackPlayer().isInCheckMate()) {
                     red = red.brighter();
                 }
                 if (board.blackPlayer().getPlayerKing().getPiecePosition() == this.squareID) {
                     this.setBackground(red);
-                    return;
                 }
-            }
-            if (board.whitePlayer().isInCheck()) {
+            } else if (board.whitePlayer().isInCheck()) {
                 if (!board.whitePlayer().isInCheckMate()) {
                     red = red.brighter();
                 }
                 if (board.whitePlayer().getPlayerKing().getPiecePosition() == this.squareID) {
                     this.setBackground(red);
+                }
+            } else if (board.blackPlayer().isInStalemate()) {
+                if (board.blackPlayer().getPlayerKing().getPiecePosition() == this.squareID) {
+                    this.setBackground(Color.GRAY);
+                }
+            } else if (board.whitePlayer().isInStalemate()) {
+                if (board.whitePlayer().getPlayerKing().getPiecePosition() == this.squareID) {
+                    this.setBackground(Color.GRAY);
                 }
             }
         }

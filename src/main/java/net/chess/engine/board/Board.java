@@ -157,9 +157,13 @@ public class Board {
         return chessBoard.get(squareCoordinate);
     }
 
-    public Iterable<Move> getAllLegalMoves() {
+    public Collection<Move> getAllLegalMoves() {
         return Stream.concat(this.whitePlayer.getLegalMoves().stream()
                 , this.blackPlayer.getLegalMoves().stream()).collect(Collectors.toList());
+    }
+
+    public boolean isGameOver() {
+        return this.blackPlayer.isInCheckMate() || this.whitePlayer.isInCheckMate() || this.blackPlayer.isInStalemate() || this.whitePlayer.isInStalemate();
     }
 
     // inner builder class -> directly stolen from design patterns

@@ -57,7 +57,6 @@ public abstract class Player {
         return this.legalMoves.contains(move);
     }
 
-    //TODO: implement
     public boolean isInCheck() {
         return this.isInCheck;
     }
@@ -79,7 +78,7 @@ public abstract class Player {
     }
 
     public boolean isCastled() {
-        return false;
+        return this.playerKing.isCastled();
     }
 
     protected boolean hasEscapeMoves() {
