@@ -1,7 +1,7 @@
 package main.java.net.chess.gui;
 
 import main.java.net.chess.ai.AI;
-import main.java.net.chess.ai.Rand;
+import main.java.net.chess.ai.AlphaBeta.AlphaBetaPruning;
 import main.java.net.chess.engine.Team;
 import main.java.net.chess.engine.board.Board;
 import main.java.net.chess.engine.board.BoardUtilities;
@@ -11,7 +11,6 @@ import main.java.net.chess.engine.pieces.*;
 import main.java.net.chess.engine.player.MoveStatus;
 import main.java.net.chess.engine.player.MoveTransition;
 import main.java.net.chess.engine.player.Player;
-import main.java.net.chess.engine.player.WhitePlayer;
 import main.java.net.chess.pgn.FenParser;
 
 import javax.imageio.ImageIO;
@@ -50,9 +49,9 @@ public class GUI_Contents extends Observable {
     private final TakenPieces takenPieces;
     private Board board;
     private final MoveLog moveLog;
-    private final Game game;
+    private final GameDialog gameDialog;
     private final AudioHandler audioHandler;
-    private final static Dimension FRAME_DIMENSION = new Dimension(600, 700);
+    private final static Dimension FRAME_DIMENSION = new Dimension(640, 720);
     private final Dimension CHESS_BOARD_DIMENSION = new Dimension(400, 400);
     private final Dimension SQUARE_DIMENSION = new Dimension(10, 10);
 
@@ -80,7 +79,7 @@ public class GUI_Contents extends Observable {
         this.highlightLegalMovesActive = true;
         this.moveLog = new MoveLog();
         this.addObserver(new GameObserver());
-        this.game = new Game(this.frame, true);
+        this.gameDialog = new GameDialog(this.frame);
         this.audioHandler = new AudioHandler();
         this.currentMove = 0;
         this.movingEnabled = true;
@@ -93,10 +92,9 @@ public class GUI_Contents extends Observable {
         this.frame.add(this.takenPieces, BorderLayout.SOUTH);
         this.frame.setJMenuBar(makeMenuBar());
         this.frame.addKeyListener(addHotKeys());
-        this.frame.setIconImage(new ImageIcon(path + "WR.png").getImage());
         this.frame.setSize(FRAME_DIMENSION);
         this.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.frame.setResizable(false);
+        this.frame.setResizable(true);
         this.frame.setLocationRelativeTo(null);
         this.frame.setVisible(true);
     }
@@ -105,8 +103,8 @@ public class GUI_Contents extends Observable {
         return GUI_INSTANCE;
     }
 
-    private Game getGame() {
-        return this.game;
+    private GameDialog getGame() {
+        return this.gameDialog;
     }
 
     private Board getGameBoard() {
@@ -243,7 +241,7 @@ public class GUI_Contents extends Observable {
         final JMenu optionsMenu = new JMenu("Options");
         final JMenuItem setupGame = new JMenuItem("Setup Game");
         setupGame.addActionListener(e -> {
-            GUI_Contents.get().getGame().promptUser();
+            GUI_Contents.get().getGame().promptUser(GUI_Contents.get().frame);
             GUI_Contents.get().gameUpdate(GUI_Contents.get().getGame());
         });
         setupGame.setFont(frame.getFont());
@@ -256,11 +254,11 @@ public class GUI_Contents extends Observable {
     }
 
     /**
-     * @param game to notify all Observers
+     * @param gameDialog to notify all Observers
      */
-    private void gameUpdate(final Game game) {
+    private void gameUpdate(final GameDialog gameDialog) {
         setChanged();
-        notifyObservers(game);
+        notifyObservers(gameDialog);
     }
 
     // TODO: Observer is deprecated -> look into PropertyChangeListener ::
@@ -275,20 +273,20 @@ public class GUI_Contents extends Observable {
         @Override
         public void update(final Observable o, final Object arg) {
             if (GUI_Contents.get().getGame().isAIPlayer(GUI_Contents.get().getGameBoard().currentPlayer())
-                    && !GUI_Contents.get().getGameBoard().currentPlayer().isInCheckMate()
-                    && !GUI_Contents.get().getGameBoard().currentPlayer().isInStalemate()) {
+                    && !GUI_Contents.get().getGameBoard().currentPlayer().isInCheckmate()
+                    && !GUI_Contents.get().getGameBoard().currentPlayer().isInStalemate()
+                    && !GUI_Contents.get().isDrawByLackOfMaterial()) {
                 // execute the AI
-                final backGroundThreadForAI thinkTank = new backGroundThreadForAI();
-                thinkTank.execute();
+                final backGroundThreadForAI thread = new backGroundThreadForAI();
+                thread.execute();
 
-                if (GUI_Contents.get().getGameBoard().currentPlayer().isInCheckMate()) {
+                if (GUI_Contents.get().getGameBoard().currentPlayer().isInCheckmate()) {
                     System.out.println("game over, " + GUI_Contents.get().getGameBoard().currentPlayer()+ " is in checkmate!");
                 }
 
                 if (GUI_Contents.get().getGameBoard().currentPlayer().isInStalemate()) {
                     System.out.println("game over, " + GUI_Contents.get().getGameBoard().currentPlayer()+ " is in stalemate!");
                 }
-
             }
         }
     }
@@ -303,8 +301,10 @@ public class GUI_Contents extends Observable {
         @Override
         protected Move doInBackground() {
             // TODO: implement difference between random and actual algorithm
-            final AI random = new Rand();
-            return random.execute(GUI_INSTANCE.getGameBoard());
+            //final AI minimax = new Minimax(GUI_Contents.get().gameDialog.getSearchDepth());
+            //return minimax.execute(GUI_INSTANCE.getGameBoard());
+            final AI alphabeta = new AlphaBetaPruning(GUI_Contents.get().gameDialog.getSearchDepth());
+            return alphabeta.execute(GUI_Contents.get().getGameBoard());
         }
 
         @Override
@@ -440,26 +440,30 @@ public class GUI_Contents extends Observable {
         }
     }
 
-
-
-    // TODO: fix this to actually figure out draw
+    /**
+     * @return if there is a lack of material to mate someone
+     */
+    public boolean isDrawByLackOfMaterial() {
+        if (this.board.getBlackPieces().size() <= 2 && this.board.getWhitePieces().size() <= 2) {
+            if ((this.board.getBlackPieces().stream().anyMatch(piece -> piece instanceof Bishop || piece instanceof Knight) || this.board.getBlackPieces().size() == 1)
+                    && (this.board.getWhitePieces().stream().anyMatch(piece -> piece instanceof Bishop || piece instanceof Knight) || this.board.getWhitePieces().size() == 1)) {
+                this.movingEnabled = false;
+                return true;
+            } else if (this.board.getBlackPieces().size() == 1 && this.board.getWhitePieces().size() == 1) {
+                this.movingEnabled = false;
+                return true;
+            }
+        }
+        return false;
+    }
 
     /**
      * @param move pass in the move to check for draw by repetition
      * @return true if it is a move resulting in a draw
      */
+
+    // TODO: implement repetition
     public boolean isDrawByRepetition(final Move move) {
-        int moveCount = this.currentMove;
-        int repetitionCount = 0;
-        for (int i = 0; i < moveCount; i++) {
-            if (i % 2 == (board.currentPlayer() instanceof WhitePlayer ? Team.WHITE : Team.BLACK).ordinal()
-                    && this.moveLog.getMoves().get(i).equals(move)) {
-                repetitionCount++;
-                if (repetitionCount >= 3) {
-                    return true;
-                }
-            }
-        }
         return false;
     }
 
@@ -592,7 +596,7 @@ public class GUI_Contents extends Observable {
         }
 
         /**
-         * @return MouseListener for managing moves made by GUI user
+         * @return MouseListener for managing moves made by user
          */
         private MouseListener createMouseListener() {
             return new MouseListener() {
@@ -677,8 +681,8 @@ public class GUI_Contents extends Observable {
                             if (transition.getMoveStatus().isDone()) {
                                 if (move.isAttack()) {
                                     audioHandler.playSound(1);
-                                } else if (transition.getTransitionBoard().blackPlayer().isInCheckMate()
-                                        || transition.getTransitionBoard().whitePlayer().isInCheckMate()) {
+                                } else if (transition.getTransitionBoard().blackPlayer().isInCheckmate()
+                                        || transition.getTransitionBoard().whitePlayer().isInCheckmate()) {
                                     audioHandler.playSound(2);
                                 } else {
                                     audioHandler.playSound(0);
@@ -694,7 +698,7 @@ public class GUI_Contents extends Observable {
                         SwingUtilities.invokeLater(() -> {
                             takenPieces.refresh(moveLog);
                             chessBoard.drawBoard(board);
-                            if (game.isAIPlayer(board.currentPlayer())) {
+                            if (gameDialog.isAIPlayer(board.currentPlayer())) {
                                 GUI_Contents.get().moveMadeUpdate(PlayerType.HUMAN);
                             }
                         });
@@ -716,6 +720,9 @@ public class GUI_Contents extends Observable {
             };
         }
 
+        /**
+         * @param board to get the Piece that is on the Square to generate an image
+         */
         private void assignSquareIcon(final Board board) {
             this.removeAll();
             if (board.getSquare(this.squareID).isOccupied()) {
@@ -733,8 +740,10 @@ public class GUI_Contents extends Observable {
             }
         }
 
+        /**
+         * @param board to highlight all the legal moves on the board
+         */
         private void highlightLegalMoves(final Board board) {
-
             if (highlightLegalMovesActive) {
                 for (final Move move: pieceLegalMoves(board)) {
                     if (move.getDestinationCoordinate() == squareID) {
@@ -749,6 +758,10 @@ public class GUI_Contents extends Observable {
             }
         }
 
+        /**
+         * @param board to filter out all the legal moves on the board, filtering out moves that leave in check and duplicate moves
+         * @return all visually important legal moves
+         */
         private Collection<Move> pieceLegalMoves(final Board board) {
             if (movedPiece != null && movedPiece.getPieceTeam() == board.currentPlayer().getTeam()) {
                 return movedPiece.calcLegalMoves(board).stream().filter
@@ -769,18 +782,20 @@ public class GUI_Contents extends Observable {
             return Collections.emptyList();
         }
 
+        /**
+         * @param board passed in Board to check for mate, checks and stalemate
+         */
         private void signifyCheck(final Board board) {
             Color red = new Color(152, 40, 0);
-
             if (board.blackPlayer().isInCheck()) {
-                if (!board.blackPlayer().isInCheckMate()) {
+                if (!board.blackPlayer().isInCheckmate()) {
                     red = red.brighter();
                 }
                 if (board.blackPlayer().getPlayerKing().getPiecePosition() == this.squareID) {
                     this.setBackground(red);
                 }
             } else if (board.whitePlayer().isInCheck()) {
-                if (!board.whitePlayer().isInCheckMate()) {
+                if (!board.whitePlayer().isInCheckmate()) {
                     red = red.brighter();
                 }
                 if (board.whitePlayer().getPlayerKing().getPiecePosition() == this.squareID) {
@@ -794,10 +809,17 @@ public class GUI_Contents extends Observable {
                 if (board.whitePlayer().getPlayerKing().getPiecePosition() == this.squareID) {
                     this.setBackground(Color.GRAY);
                 }
+            } else if (isDrawByLackOfMaterial()) {
+                if (board.whitePlayer().getPlayerKing().getPiecePosition() == this.squareID
+                        || board.blackPlayer().getPlayerKing().getPiecePosition() == this.squareID) {
+                    this.setBackground(Color.GRAY);
+                }
             }
         }
 
-        // TODO make easier?
+        /**
+         * @return the Color of the Square
+         */
         private Color assignSquareColour() {
             if (BoardUtilities.FIRST_ROW[this.squareID]
                 || BoardUtilities.THIRD_ROW[this.squareID]
@@ -810,9 +832,12 @@ public class GUI_Contents extends Observable {
                     || BoardUtilities.EIGHTH_ROW[this.squareID]) {
                 return (this.squareID%2 != 0 ? lightColour : darkColour);
             }
-            throw new RuntimeException("what");
+            throw new RuntimeException("Square is off the bounds of the board.");
         }
 
+        /**
+         * @param board to pass in all of the above methods -> draws one single Square
+         */
         public void drawSquare(final Board board) {
             setBackground(assignSquareColour());
             assignSquareIcon(board);
@@ -823,6 +848,9 @@ public class GUI_Contents extends Observable {
         }
     }
 
+    /**
+     * JPanel to represent the Taken Pieces in one Game
+     */
     private static class TakenPieces extends JPanel {
 
         private final JPanel WEST;
@@ -842,6 +870,10 @@ public class GUI_Contents extends Observable {
             this.add(bottom, BorderLayout.SOUTH);
         }
 
+        /**
+         * @param moveLog passed in to look for Attacking Moves
+         *                , which have an attacked Piece -> so it will be a "Taken Piece"
+         */
         public void refresh(final MoveLog moveLog) {
             this.EAST.removeAll();
             this.WEST.removeAll();
@@ -865,13 +897,9 @@ public class GUI_Contents extends Observable {
 
             for (final Piece takenPiece: whiteTakenPieces) {
                 try {
-                    final BufferedImage image = ImageIO.read(new File(path
-                            + takenPiece.getPieceTeam().toString() .charAt(0)
-                            + takenPiece.getPieceType().toString().charAt(0) + ".png"));
-
-                    final ImageIcon icon = new ImageIcon(image);
-                    final JLabel imageLabel = new JLabel(icon);
-                    this.EAST.add(imageLabel);
+                    this.EAST.add(new JLabel(new ImageIcon(ImageIO.read(new File(path
+                            + takenPiece.getPieceTeam().toString().charAt(0)
+                            + takenPiece + ".png")))));
 
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -880,12 +908,9 @@ public class GUI_Contents extends Observable {
 
             for (final Piece takenPiece: blackTakenPieces) {
                 try {
-                    final BufferedImage image = ImageIO.read(new File(path
+                    this.WEST.add(new JLabel(new ImageIcon(ImageIO.read(new File(path
                             + takenPiece.getPieceTeam().toString().charAt(0)
-                            + takenPiece.getPieceType().toString().charAt(0) + ".png"));
-                    final ImageIcon icon = new ImageIcon(image);
-                    final JLabel imageLabel = new JLabel(icon);
-                    this.WEST.add(imageLabel);
+                            + takenPiece + ".png")))));
 
                 } catch (final IOException e) {
                     e.printStackTrace();
@@ -895,7 +920,9 @@ public class GUI_Contents extends Observable {
             repaint();
         }
     }
-
+    /**
+     * Popup dialog for Promoting a Promotion Pawn
+     */
     private static class PromotionDialog extends JDialog {
 
         private PieceType selectedPieceType;
@@ -909,11 +936,6 @@ public class GUI_Contents extends Observable {
             JButton rookButton = new JButton(new ImageIcon(path + team +"R.png"));
             JButton bishopButton = new JButton(new ImageIcon(path + team +"B.png"));
             JButton knightButton = new JButton(new ImageIcon(path + team +"N.png"));
-
-            queenButton.setBackground(Color.white);
-            rookButton.setBackground(Color.white);
-            bishopButton.setBackground(Color.white);
-            knightButton.setBackground(Color.white);
 
             queenButton.setFocusable(false);
             rookButton.setFocusable(false);
@@ -937,7 +959,6 @@ public class GUI_Contents extends Observable {
                 selectedPieceType = PieceType.KNIGHT;
                 dispose();
             });
-
             // Create a panel to hold the buttons
             JPanel panel = new JPanel();
             panel.add(queenButton);
@@ -945,9 +966,7 @@ public class GUI_Contents extends Observable {
             panel.add(bishopButton);
             panel.add(knightButton);
             this.add(panel);
-
             // Set size and visibility
-            this.setPreferredSize(new Dimension(250, 100));
             this.pack();
             this.setLocationRelativeTo(parent);
             this.setVisible(true);
@@ -958,7 +977,10 @@ public class GUI_Contents extends Observable {
         }
     }
 
-    private static class Game extends JDialog {
+    /**
+     * Popup dialog for Computer and Human settings
+     */
+    private static class GameDialog extends JDialog {
 
         private GUI_Contents.PlayerType whitePlayerType;
         private GUI_Contents.PlayerType blackPlayerType;
@@ -967,12 +989,8 @@ public class GUI_Contents extends Observable {
         private static final String HUMAN_TEXT = "Human";
         private static final String COMPUTER_TEXT = "Computer";
 
-        // TODO: JMenu for choosing the AI to play against
-
-        public Game(final JFrame frame,
-                    final boolean modal) {
-            super(frame, modal);
-            setLocationRelativeTo(frame);
+        public GameDialog(final JFrame parent) {
+            super(parent, "Game", true);
             final JPanel myPanel = new JPanel(new GridLayout(0, 1));
             final JRadioButton whiteHumanButton = new JRadioButton(HUMAN_TEXT);
             final JRadioButton whiteComputerButton = new JRadioButton(COMPUTER_TEXT);
@@ -1009,12 +1027,11 @@ public class GUI_Contents extends Observable {
             okButton.addActionListener(e -> {
                 whitePlayerType = whiteComputerButton.isSelected() ? GUI_Contents.PlayerType.COMPUTER : GUI_Contents.PlayerType.HUMAN;
                 blackPlayerType = blackComputerButton.isSelected() ? GUI_Contents.PlayerType.COMPUTER : GUI_Contents.PlayerType.HUMAN;
-                Game.this.setVisible(false);
+                GameDialog.this.setVisible(false);
             });
-
             cancelButton.addActionListener(e -> {
                 System.out.println("Cancel");
-                Game.this.setVisible(false);
+                GameDialog.this.setVisible(false);
             });
 
             myPanel.add(cancelButton);
@@ -1024,7 +1041,8 @@ public class GUI_Contents extends Observable {
             setVisible(false);
         }
 
-        void promptUser() {
+        void promptUser(JFrame parent) {
+            setLocationRelativeTo(parent);
             setVisible(true);
             repaint();
         }
@@ -1054,7 +1072,3 @@ public class GUI_Contents extends Observable {
         }
     }
 }
-
-
-
-

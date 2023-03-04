@@ -72,7 +72,7 @@ public abstract class Piece {
 
     public enum PieceType {
 
-        PAWN("P",1) {
+        PAWN("P",100) {
             @Override
             public boolean isKing() {
                 return false;
@@ -83,7 +83,7 @@ public abstract class Piece {
                 return false;
             }
         },
-        KNIGHT("N", 3) {
+        KNIGHT("N", 320) {
             @Override
             public boolean isKing() {
                 return false;
@@ -94,7 +94,7 @@ public abstract class Piece {
                 return false;
             }
         },
-        BISHOP("B", 3) {
+        BISHOP("B", 330) {
             @Override
             public boolean isKing() {
                 return false;
@@ -105,7 +105,7 @@ public abstract class Piece {
                 return false;
             }
         },
-        ROOK("R", 5) {
+        ROOK("R", 500) {
             @Override
             public boolean isKing() {
                 return false;
@@ -116,7 +116,7 @@ public abstract class Piece {
                 return true;
             }
         },
-        QUEEN("Q", 9) {
+        QUEEN("Q", 900) {
             @Override
             public boolean isKing() {
                 return false;
@@ -127,7 +127,7 @@ public abstract class Piece {
                 return false;
             }
         },
-        KING("K", 100) {
+        KING("K", 20000) {
             @Override
             public boolean isKing() {
                 return true;
@@ -139,8 +139,8 @@ public abstract class Piece {
             }
         };
 
-        private String pieceName;
-        private int pieceValue;
+        private final String pieceName;
+        private final int pieceValue;
 
         PieceType(final String pieceName, final int pieceValue) {
             this.pieceName = pieceName;

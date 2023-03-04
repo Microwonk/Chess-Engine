@@ -61,7 +61,7 @@ public abstract class Player {
         return this.isInCheck;
     }
 
-    public boolean isInCheckMate() {
+    public boolean isInCheckmate() {
         return this.isInCheck && !hasEscapeMoves();
     }
 

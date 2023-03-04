@@ -163,11 +163,19 @@ public class Board {
     }
 
     public boolean isGameOverCheckMate() {
-        return this.blackPlayer.isInCheckMate() || this.whitePlayer.isInCheckMate();
+        return this.blackPlayer.isInCheckmate() || this.whitePlayer.isInCheckmate();
     }
 
     public boolean isGameOverStaleMate() {
         return this.blackPlayer.isInStalemate() || this.whitePlayer.isInStalemate();
+    }
+
+    public boolean isGameOver() {
+        return isGameOverCheckMate() || isGameOverCheckMate();
+    }
+
+    public Piece getPiece(final int destinationCoordinate) {
+        return this.getSquare(destinationCoordinate).getPiece();
     }
 
     // inner builder class -> directly stolen from design patterns
