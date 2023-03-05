@@ -20,7 +20,7 @@ public class AlphaBetaPruning implements AI {
     private final int searchDepth;
 
     public AlphaBetaPruning(final int searchDepth) {
-        this.executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        this.executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1);
         this.searchDepth = searchDepth;
     }
 

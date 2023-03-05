@@ -30,9 +30,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.SubmissionPublisher;
 import java.util.stream.Collectors;
 
 import static javax.swing.SwingUtilities.isLeftMouseButton;
+import static java.util.concurrent.Flow.Publisher;
+import static java.util.concurrent.Flow.Subscriber;
+import static java.util.concurrent.Flow.Subscription;
 import static main.java.net.chess.engine.board.Move.*;
 import static main.java.net.chess.engine.pieces.Piece.PieceType;
 
@@ -40,7 +44,7 @@ import static main.java.net.chess.engine.pieces.Piece.PieceType;
  * @author Nicolas Frey
  * @version 1.0
  */
-public class GUI_Contents extends Observable {
+public class GUI_Contents implements Publisher<Object> {
 
     // TODO: shuffling moves results in draw
 
@@ -56,6 +60,7 @@ public class GUI_Contents extends Observable {
     private final Dimension SQUARE_DIMENSION = new Dimension(10, 10);
 
     private Move computerMove;
+    private final SubmissionPublisher<Object> publisher;
     private Square sourceSquare;
     private Square destinationSquare;
     private Piece movedPiece;
@@ -78,7 +83,8 @@ public class GUI_Contents extends Observable {
         this.boardDirection = BoardDirection.NORMAL;
         this.highlightLegalMovesActive = true;
         this.moveLog = new MoveLog();
-        this.addObserver(new GameObserver());
+        this.publisher = new SubmissionPublisher<>();
+        this.addObserver(new GameSubscriber());
         this.gameDialog = new GameDialog(this.frame);
         this.audioHandler = new AudioHandler();
         this.currentMove = 0;
@@ -99,6 +105,14 @@ public class GUI_Contents extends Observable {
         this.frame.setVisible(true);
     }
 
+    public void addObserver(Subscriber<? super Object> subscriber) {
+        publisher.subscribe(subscriber);
+    }
+
+    private void notifyObservers(Object obj) {
+        publisher.submit(obj);
+    }
+
     public static GUI_Contents get(){
         return GUI_INSTANCE;
     }
@@ -107,7 +121,7 @@ public class GUI_Contents extends Observable {
         return this.gameDialog;
     }
 
-    private Board getGameBoard() {
+    public Board getGameBoard() {
         return this.board;
     }
 
@@ -257,8 +271,12 @@ public class GUI_Contents extends Observable {
      * @param gameDialog to notify all Observers
      */
     private void gameUpdate(final GameDialog gameDialog) {
-        setChanged();
         notifyObservers(gameDialog);
+    }
+
+    @Override
+    public void subscribe(Subscriber<? super Object> subscriber) {
+
     }
 
     // TODO: Observer is deprecated -> look into PropertyChangeListener ::
@@ -267,11 +285,23 @@ public class GUI_Contents extends Observable {
     /**
      * Game Observer
      */
-    private static class GameObserver implements Observer {
+    private static class GameSubscriber implements Subscriber<Object> {
 
-        // if current Player is AI, make the Move here instead of the GUI
+        private Subscription subscription;
+
         @Override
-        public void update(final Observable o, final Object arg) {
+        public void onSubscribe(Subscription subscription) {
+            this.subscription = subscription;
+            subscription.request(1); // Request initial batch of 1 event
+        }
+
+        @Override
+        public void onNext(Object item) {
+            handleGameEvent(item);
+            subscription.request(1); // Request next batch of 1 event
+        }
+
+        private void handleGameEvent(Object event) {
             if (GUI_Contents.get().getGame().isAIPlayer(GUI_Contents.get().getGameBoard().currentPlayer())
                     && !GUI_Contents.get().getGameBoard().currentPlayer().isInCheckmate()
                     && !GUI_Contents.get().getGameBoard().currentPlayer().isInStalemate()
@@ -281,13 +311,23 @@ public class GUI_Contents extends Observable {
                 thread.execute();
 
                 if (GUI_Contents.get().getGameBoard().currentPlayer().isInCheckmate()) {
-                    System.out.println("game over, " + GUI_Contents.get().getGameBoard().currentPlayer()+ " is in checkmate!");
+                    System.out.println("game over, " + GUI_Contents.get().getGameBoard().currentPlayer() + " is in checkmate!");
                 }
 
                 if (GUI_Contents.get().getGameBoard().currentPlayer().isInStalemate()) {
                     System.out.println("game over, " + GUI_Contents.get().getGameBoard().currentPlayer()+ " is in stalemate!");
                 }
             }
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+            throwable.printStackTrace();
+        }
+
+        @Override
+        public void onComplete() {
+            System.out.println("Game over!");
         }
     }
 
@@ -298,18 +338,22 @@ public class GUI_Contents extends Observable {
         private backGroundThreadForAI() {
         }
 
+        // what should be done in the background thread
         @Override
         protected Move doInBackground() {
             // TODO: implement difference between random and actual algorithm
-            //final AI minimax = new Minimax(GUI_Contents.get().gameDialog.getSearchDepth());
-            //return minimax.execute(GUI_INSTANCE.getGameBoard());
-            final AI alphabeta = new AlphaBetaPruning(GUI_Contents.get().gameDialog.getSearchDepth());
-            return alphabeta.execute(GUI_Contents.get().getGameBoard());
+            final AI alphaBeta = new AlphaBetaPruning(GUI_Contents.get().gameDialog.getSearchDepth());
+            final Move move = alphaBeta.execute(GUI_Contents.get().getGameBoard());
+            if (move.isAttack()) {
+                GUI_Contents.get().audioHandler.playSound(1);
+            } else {
+                GUI_Contents.get().audioHandler.playSound(0);
+            }
+            return move;
         }
 
         @Override
         protected void done() {
-
             try {
                 final Move executedMove = get();
                 GUI_Contents.get().updateComputerMove(executedMove);
@@ -329,7 +373,6 @@ public class GUI_Contents extends Observable {
      * @param playerType to notify the observer of the new Player-type
      */
     private void moveMadeUpdate(final PlayerType playerType) {
-        setChanged();
         notifyObservers(playerType);
     }
 

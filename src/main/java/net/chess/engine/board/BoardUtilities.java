@@ -1,7 +1,9 @@
 package main.java.net.chess.engine.board;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class BoardUtilities {
 
@@ -22,6 +24,8 @@ public class BoardUtilities {
     public static final boolean[] THIRD_ROW = initRow(40);
     public static final boolean[] SECOND_ROW = initRow(48);
     public static final boolean[] FIRST_ROW = initRow(56);
+
+    public static final boolean[] IS_CENTRAL = initCentral();
 
 
     public static final int NUM_SQUARES = 64;
@@ -77,6 +81,19 @@ public class BoardUtilities {
         return row;
     }
 
+    private static boolean[] initCentral() {
+        return new boolean[]{
+                false, false, false, false, false, false, false, false,
+                false, false, false, false, false, false, false, false,
+                false, false, true, true, true, true, false, false,
+                false, false, true, true, true, true, false, false,
+                false, false, true, true, true, true, false, false,
+                false, false, true, true, true, true, false, false,
+                false, false, false, false, false, false, false, false,
+                false, false, false, false, false, false, false, false
+        };
+    }
+
     public static boolean isValidSquareCoordinate(final int coordinate) {
         return coordinate >= 0 && coordinate < 64;
     }
@@ -87,5 +104,28 @@ public class BoardUtilities {
 
     public static String getPositionAtCoordinate(final int coordinate) {
         return NOTATION[coordinate];
+    }
+
+    public static int getAttackCount(final Collection<Move> legalMoves, final int piecePosition) {
+        int attackCount = 0;
+        for (final Move move: legalMoves.stream().filter(move -> move.getDestinationCoordinate()
+                == piecePosition && move.isAttack()).collect(Collectors.toList())) {
+            attackCount++;
+        }
+        return attackCount;
+    }
+
+    public static int distanceFromEdge(final int piecePostion) {
+        if (FIRST_COLUMN[piecePostion] || EIGHTH_COLUMN[piecePostion]) {
+            return 0;
+        } else if (SECOND_COLUMN[piecePostion] || SEVENTH_COLUMN[piecePostion]) {
+            return 1;
+        } else if (THIRD_COLUMN[piecePostion] || SIXTH_COLUMN[piecePostion]) {
+            return 2;
+        } else if (FOURTH_COLUMN[piecePostion] || FIFTH_COLUMN[piecePostion]) {
+            return 3;
+        } else {
+            throw new RuntimeException("off Board");
+        }
     }
 }

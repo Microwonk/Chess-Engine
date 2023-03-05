@@ -4,6 +4,7 @@ import main.java.net.chess.engine.Team;
 import main.java.net.chess.engine.board.Board;
 import main.java.net.chess.engine.board.Move;
 import main.java.net.chess.engine.pieces.King;
+import main.java.net.chess.engine.pieces.Pawn;
 import main.java.net.chess.engine.pieces.Piece;
 
 import java.util.ArrayList;
@@ -106,6 +107,10 @@ public abstract class Player {
             return new MoveTransition(this.board, move, MoveStatus.LEAVES_IN_CHECK);
         }
         return new MoveTransition(transitionBoard, move, MoveStatus.DONE);
+    }
+
+    public List<Piece> getActivePawns() {
+        return getActivePieces().stream().filter(piece -> piece instanceof Pawn).collect(Collectors.toList());
     }
 
     public King getPlayerKing() {
