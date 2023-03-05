@@ -14,6 +14,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+/** recursive algorithm for alpha beta pruning -> WIP
+ * @author Nicolas Frey
+ * @version 1.0
+ */
 public class AlphaBetaPruning implements AI {
 
     private final ExecutorService executorService;

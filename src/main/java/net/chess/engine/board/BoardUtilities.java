@@ -5,8 +5,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/** Utilities for Comfort
+ * @author Nicolas Frey
+ * @version 1.0
+ */
 public class BoardUtilities {
 
+    private BoardUtilities() {
+        throw new RuntimeException("don't do this");
+    }
+
+    // to see if a coordinate is on a specific column/file
     public static final boolean[] FIRST_COLUMN = initColumn(0);
     public static final boolean[] SECOND_COLUMN = initColumn(1);
     public static final boolean[] THIRD_COLUMN = initColumn(2);
@@ -16,6 +25,7 @@ public class BoardUtilities {
     public static final boolean[] SEVENTH_COLUMN = initColumn(6);
     public static final boolean[] EIGHTH_COLUMN = initColumn(7);
 
+    // to see if a coordinate is on a specific
     public static final boolean[] EIGHTH_ROW = initRow(0);
     public static final boolean[] SEVENTH_ROW = initRow(8);
     public static final boolean[] SIXTH_ROW = initRow(16);
@@ -25,15 +35,17 @@ public class BoardUtilities {
     public static final boolean[] SECOND_ROW = initRow(48);
     public static final boolean[] FIRST_ROW = initRow(56);
 
+    // to see if a specified coordinate is central or not
     public static final boolean[] IS_CENTRAL = initCentral();
-
 
     public static final int NUM_SQUARES = 64;
     public static final int NUM_SQUARES_PER_ROW = 8;
 
+    // for pgn format
     public static final String[] NOTATION = initNotation();
     public static Map<String, Integer> MAPPING_TO_POS = initMapping();
 
+    // following are just initializers
     private static Map<String, Integer> initMapping() {
         final Map<String, Integer> res = new HashMap<>();
 
@@ -57,13 +69,8 @@ public class BoardUtilities {
         return res;
     }
 
-    private BoardUtilities() {
-        throw new RuntimeException("dont do this");
-    }
-
     private static boolean[] initColumn(int columnNumber) {
         final boolean[] column = new boolean[NUM_SQUARES];
-        // do not initialize the booleans to false, it is done automatically
         do {
             column[columnNumber] = true;
             columnNumber += NUM_SQUARES_PER_ROW;
@@ -94,6 +101,10 @@ public class BoardUtilities {
         };
     }
 
+    /**
+     * @param coordinate given to see if it is on the board
+     * @return true or false
+     */
     public static boolean isValidSquareCoordinate(final int coordinate) {
         return coordinate >= 0 && coordinate < 64;
     }
@@ -102,10 +113,19 @@ public class BoardUtilities {
         return MAPPING_TO_POS.get(position);
     }
 
+    /**
+     * @param coordinate given for notation
+     * @return notation
+     */
     public static String getPositionAtCoordinate(final int coordinate) {
         return NOTATION[coordinate];
     }
 
+    /**
+     * @param legalMoves opponents legal-moves
+     * @param piecePosition position of the square being attacked
+     * @return amount of attacks on the square
+     */
     public static int getAttackCount(final Collection<Move> legalMoves, final int piecePosition) {
         int attackCount = 0;
         for (final Move move: legalMoves.stream().filter(move -> move.getDestinationCoordinate()
@@ -115,14 +135,18 @@ public class BoardUtilities {
         return attackCount;
     }
 
-    public static int distanceFromEdge(final int piecePostion) {
-        if (FIRST_COLUMN[piecePostion] || EIGHTH_COLUMN[piecePostion]) {
+    /**
+     * @param piecePosition position of the piece
+     * @return the distance the piece is from the edge
+     */
+    public static int distanceFromEdge(final int piecePosition) {
+        if (FIRST_COLUMN[piecePosition] || EIGHTH_COLUMN[piecePosition]) {
             return 0;
-        } else if (SECOND_COLUMN[piecePostion] || SEVENTH_COLUMN[piecePostion]) {
+        } else if (SECOND_COLUMN[piecePosition] || SEVENTH_COLUMN[piecePosition]) {
             return 1;
-        } else if (THIRD_COLUMN[piecePostion] || SIXTH_COLUMN[piecePostion]) {
+        } else if (THIRD_COLUMN[piecePosition] || SIXTH_COLUMN[piecePosition]) {
             return 2;
-        } else if (FOURTH_COLUMN[piecePostion] || FIFTH_COLUMN[piecePostion]) {
+        } else if (FOURTH_COLUMN[piecePosition] || FIFTH_COLUMN[piecePosition]) {
             return 3;
         } else {
             throw new RuntimeException("off Board");

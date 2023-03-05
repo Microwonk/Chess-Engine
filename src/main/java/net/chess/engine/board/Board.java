@@ -10,6 +10,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/** Chessboard filled with squares
+ * @author Nicolas Frey
+ * @version 1.0
+ */
 public class Board {
 
     private final List<Square> chessBoard;
@@ -21,6 +25,7 @@ public class Board {
     private final Player currentPlayer;
     private final Pawn enPassantPawn;
 
+    // can only be instantiated using the Board Builder
     private Board(final Builder builder) {
         this.chessBoard = createChessBoard(builder);
         this.whitePieces = calculateActivePieces(this.chessBoard, Team.WHITE);
@@ -72,6 +77,10 @@ public class Board {
     }
 
 
+    /**
+     * @param pieces passed in for which the legal-moves should be calculated for
+     * @return all legal Moves on the Board
+     */
     private Collection<Move> calculateLegalMoves(Collection<Piece> pieces) {
         final List<Move> legalMoves = new ArrayList<>();
 
@@ -81,6 +90,11 @@ public class Board {
         return Collections.unmodifiableList(legalMoves);
     }
 
+    /**
+     * @param chessBoard for the board that should be calculated for
+     * @param team for which team it should be calculated for
+     * @return all Pieces of said Team on said Board
+     */
     private static Collection<Piece> calculateActivePieces(final List<Square> chessBoard, final Team team) {
         final List<Piece> activePieces = new ArrayList<>();
 
@@ -96,7 +110,10 @@ public class Board {
         return Collections.unmodifiableList(activePieces);
     }
 
-    // get an immutable List of Squares -> chessBoard
+    /**
+     * @param builder builder can be set to set a certain board, which will return a new Board
+     * @return new Board (List of Squares)
+     */
     private static List<Square> createChessBoard(Builder builder) {
         final Square[] squares = new Square[BoardUtilities.NUM_SQUARES];
 
@@ -107,13 +124,14 @@ public class Board {
     }
 
     public Pawn getEnPassantPawn() {
-        return enPassantPawn;
+        return this.enPassantPawn;
     }
 
-    // creates normal Board
+    /**
+     * @return a standard Chessboard
+     */
     public static Board createStandardBoard() {
         final Builder builder = new Builder();
-
         // BLACK
         builder.setPiece(new Rook(0, Team.BLACK));
         builder.setPiece(new Knight(1, Team.BLACK));
@@ -178,7 +196,10 @@ public class Board {
         return this.getSquare(destinationCoordinate).getPiece();
     }
 
-    // inner builder class -> directly stolen from design patterns
+    /** Board Builder Class
+     * @author Nicolas Frey
+     * @version 1.0
+     */
     public static class Builder {
         Map<Integer, Piece> boardConfiguration;
         Team nextMoveMaker;

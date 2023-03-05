@@ -9,6 +9,10 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+/** AI random algorithm type
+ * @author Nicolas Frey
+ * @version 1.0
+ */
 public class Rand implements AI{
     @Override
     public Move execute(Board board) {

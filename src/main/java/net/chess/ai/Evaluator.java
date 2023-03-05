@@ -12,6 +12,10 @@ import java.util.stream.Stream;
 
 import static main.java.net.chess.engine.pieces.Piece.PieceType;
 
+/** Evaluator for the Chess Board -> WIP VERRRY MUCH (so no Documentation yet)
+ * @author Nicolas Frey
+ * @version 1.0
+ */
 public class Evaluator {
     private static final int WINNING_SCORE = 10000;
     private static final int DRAW_SCORE = 0;

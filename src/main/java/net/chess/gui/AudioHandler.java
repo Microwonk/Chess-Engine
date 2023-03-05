@@ -3,6 +3,10 @@ package main.java.net.chess.gui;
 import jaco.mp3.player.MP3Player;
 import java.io.File;
 
+/** Audio Handler using jaco mp3 library
+ * @author Nicolas Frey
+ * @version 1.0
+ */
 public class AudioHandler {
     private final Sound[] sounds;
 

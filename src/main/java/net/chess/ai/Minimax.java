@@ -12,6 +12,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+/** AI minimax algorithm type
+ * @author Nicolas Frey
+ * @version 1.0
+ */
 public class Minimax implements AI{
 
     private final ExecutorService executorService;
