@@ -9,15 +9,17 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 
-/** AI random algorithm type
+/**
+ * AI random algorithm type
+ *
  * @author Nicolas Frey
  * @version 1.0
  */
-public class Rand implements AI{
+public class Rand implements AI {
     @Override
-    public Move execute(Board board) {
+    public Move execute (Board board) {
         Random r = new Random();
-        List<Move> legalMoves = new ArrayList<>(board.currentPlayer().getLegalMoves())
+        List <Move> legalMoves = new ArrayList <>(board.currentPlayer().getLegalMoves())
                 .stream().filter
                         (move -> board.currentPlayer().makeMove(move).getMoveStatus() == MoveStatus.DONE)
                 .collect(Collectors.toList());

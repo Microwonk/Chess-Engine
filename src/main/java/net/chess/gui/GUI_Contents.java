@@ -21,30 +21,29 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.SubmissionPublisher;
 import java.util.stream.Collectors;
 
+import static java.util.concurrent.Flow.*;
 import static javax.swing.SwingUtilities.isLeftMouseButton;
-import static java.util.concurrent.Flow.Publisher;
-import static java.util.concurrent.Flow.Subscriber;
-import static java.util.concurrent.Flow.Subscription;
-import static main.java.net.chess.engine.board.Move.*;
+import static main.java.net.chess.engine.board.Move.PawnMove;
+import static main.java.net.chess.engine.board.Move.PawnPromotion;
 import static main.java.net.chess.engine.pieces.Piece.PieceType;
 
-/** Container for all the GUI Content Management and Connection of all the Components -> Singleton type
+/**
+ * Container for all the GUI Content Management and Connection of all the Components -> Singleton type
+ *
  * @author Nicolas Frey
  * @version 1.0
  */
-public class GUI_Contents implements Publisher<Object> {
+public class GUI_Contents implements Publisher <Object> {
+
 
     // TODO: shuffling moves results in draw
 
@@ -54,16 +53,18 @@ public class GUI_Contents implements Publisher<Object> {
     private Board board;
     private final MoveLog moveLog;
     private final GameDialog gameDialog;
-    private final AudioHandler audioHandler;
     private final static Dimension FRAME_DIMENSION = new Dimension(640, 720);
     private final Dimension CHESS_BOARD_DIMENSION = new Dimension(400, 400);
     private final Dimension SQUARE_DIMENSION = new Dimension(10, 10);
 
-    private Move computerMove;
-    private final SubmissionPublisher<Object> publisher;
+    private Move computerMove; // not needed until later
+    private final SubmissionPublisher <Object> publisher;
+    private final ArrayList <String> positionLog; // for repetition
+    // for moving with mouse clicking
     private Square sourceSquare;
     private Square destinationSquare;
     private Piece movedPiece;
+
     private BoardDirection boardDirection;
     private int currentMove;
     private boolean movingEnabled;
@@ -77,16 +78,17 @@ public class GUI_Contents implements Publisher<Object> {
 
     // instantiating the Singleton
     private static final GUI_Contents GUI_INSTANCE = new GUI_Contents();
-    private GUI_Contents() {
+
+    private GUI_Contents () {
         this.frame = new JFrame("Chess by Nicolas Frey");
         this.board = Board.createStandardBoard();
         this.boardDirection = BoardDirection.NORMAL;
         this.highlightLegalMovesActive = true;
+        this.positionLog = new ArrayList <>();
         this.moveLog = new MoveLog();
-        this.publisher = new SubmissionPublisher<>();
-        this.addObserver(new GameSubscriber());
+        this.publisher = new SubmissionPublisher <>();
+        this.addSubscriber(new GameSubscriber());
         this.gameDialog = new GameDialog(this.frame);
-        this.audioHandler = new AudioHandler();
         this.currentMove = 0;
         this.movingEnabled = true;
         // TODO: make user choose own art
@@ -99,33 +101,34 @@ public class GUI_Contents implements Publisher<Object> {
         this.frame.setJMenuBar(makeMenuBar());
         this.frame.addKeyListener(addHotKeys());
         this.frame.setSize(FRAME_DIMENSION);
+        this.frame.setMinimumSize(new Dimension(720, 820));
         this.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.frame.setResizable(true);
         this.frame.setLocationRelativeTo(null);
         this.frame.setVisible(true);
     }
 
-    public void addObserver(Subscriber<? super Object> subscriber) {
+    public void addSubscriber (Subscriber <? super Object> subscriber) {
         publisher.subscribe(subscriber);
     }
 
-    private void notifyObservers(Object obj) {
+    private void notifySubscribers (Object obj) {
         publisher.submit(obj);
     }
 
-    public static GUI_Contents get(){
+    public static GUI_Contents get () {
         return GUI_INSTANCE;
     }
 
-    private GameDialog getGame() {
+    private GameDialog getGame () {
         return this.gameDialog;
     }
 
-    public Board getGameBoard() {
+    public Board getGameBoard () {
         return this.board;
     }
 
-    public void show() {
+    public void show () {
         GUI_Contents.get().getMoveLog().clear();
         GUI_Contents.get().getTakenPieces().refresh(GUI_Contents.get().getMoveLog());
         GUI_Contents.get().getChessBoard().drawBoard(GUI_Contents.get().getGameBoard());
@@ -134,18 +137,17 @@ public class GUI_Contents implements Publisher<Object> {
     /**
      * @return the Configuration of the Hotkeys -> can be made into global variables so that user can customize
      */
-    private KeyListener addHotKeys() {
+    private KeyListener addHotKeys () {
         return new KeyListener() {
             @Override
-            public void keyTyped(KeyEvent e) {
-
+            public void keyTyped (KeyEvent e) {
             }
 
             @Override
-            public void keyPressed(KeyEvent e) {
+            public void keyPressed (KeyEvent e) {
                 // System.out.println(e.getKeyCode()); // for finding out the hot keys KeyCode
                 switch (e.getKeyCode()) {
-                    case 37 ->  prevMove(); // left arrow
+                    case 37 -> prevMove(); // left arrow
                     case 39 -> nextMove(); // right arrow
                     case 38 -> endBoard(); // up arrow
                     case 40 -> beginBoard(); // down arrow
@@ -154,8 +156,7 @@ public class GUI_Contents implements Publisher<Object> {
             }
 
             @Override
-            public void keyReleased(KeyEvent e) {
-
+            public void keyReleased (KeyEvent e) {
             }
         };
     }
@@ -163,7 +164,7 @@ public class GUI_Contents implements Publisher<Object> {
     /**
      * @return GUI MenuBar
      */
-    private JMenuBar makeMenuBar() {
+    private JMenuBar makeMenuBar () {
         final JMenuBar menuBar = new JMenuBar();
         menuBar.setBackground(Color.WHITE);
         menuBar.add(createFileMenu());
@@ -175,13 +176,13 @@ public class GUI_Contents implements Publisher<Object> {
     /**
      * @return GUI FileMenu
      */
-    private JMenu createFileMenu() {
+    private JMenu createFileMenu () {
         final JMenu fileMenu = new JMenu("File");
         // implementing PGN files for game loading and saving
 
-        final JMenuItem openPGN = new JMenuItem("Load PGN");
-        openPGN.setFont(frame.getFont());
-        openPGN.addActionListener(e -> System.out.println("PGN Action babyyy"));
+        final JMenuItem openFen = new JMenuItem("Load Fen");
+        openFen.setFont(frame.getFont());
+        openFen.addActionListener(e -> loadGame("save/save.txt"));
 
         final JMenuItem saveToFen = new JMenuItem("Save to Fen");
         saveToFen.setFont(frame.getFont());
@@ -195,7 +196,7 @@ public class GUI_Contents implements Publisher<Object> {
         newFrame.setFont(frame.getFont());
         newFrame.addActionListener(e -> reset());
 
-        fileMenu.add(openPGN);
+        fileMenu.add(openFen);
         fileMenu.add(saveToFen);
         fileMenu.add(exitFrame);
         fileMenu.add(newFrame);
@@ -203,12 +204,24 @@ public class GUI_Contents implements Publisher<Object> {
         return fileMenu;
     }
 
+    private void loadGame (final String toLoad) {
+        final File loadFile = new File(toLoad);
+        try {
+            final BufferedReader reader = new BufferedReader(new FileReader(loadFile));
+            this.board = FenParser.createGameFromFen(reader.readLine());
+            reader.close();
+            this.chessBoard.drawBoard(this.board);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
-     * @param toSave Fen String or PGN Format Moves
+     * @param toSave   Fen String or PGN Format Moves
      * @param savePath path that will be saved to -> will be obsolete once database is established
      * @param fileType .txt or .pgn depending on FEN or PGN -> will be obsolete once database is established
      */
-    private void saveGame(final String toSave, final String savePath, final String fileType) {
+    private void saveGame (final String toSave, final String savePath, final String fileType) {
         final File saveFile = new File(savePath +
                 DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss")
                         .format(LocalDateTime.now()) + fileType);
@@ -225,7 +238,7 @@ public class GUI_Contents implements Publisher<Object> {
     /**
      * @return GUI SettingsMenu
      */
-    private JMenu createSettingsMenu() {
+    private JMenu createSettingsMenu () {
         final JMenu settingsMenu = new JMenu("Settings");
         final JMenuItem flip = new JMenuItem("Flip Board");
         flip.addActionListener(e -> {
@@ -251,7 +264,7 @@ public class GUI_Contents implements Publisher<Object> {
     /**
      * @return GUI OptionsMenu
      */
-    private JMenu createOptionsMenu() {
+    private JMenu createOptionsMenu () {
         final JMenu optionsMenu = new JMenu("Options");
         final JMenuItem setupGame = new JMenuItem("Setup Game");
         setupGame.addActionListener(e -> {
@@ -268,14 +281,14 @@ public class GUI_Contents implements Publisher<Object> {
     }
 
     /**
-     * @param gameDialog to notify all Observers
+     * @param gameDialog to notify all Subscribers
      */
-    private void gameUpdate(final GameDialog gameDialog) {
-        notifyObservers(gameDialog);
+    private void gameUpdate (final GameDialog gameDialog) {
+        notifySubscribers(gameDialog);
     }
 
     @Override
-    public void subscribe(Subscriber<? super Object> subscriber) {
+    public void subscribe (Subscriber <? super Object> subscriber) {
 
     }
 
@@ -283,29 +296,30 @@ public class GUI_Contents implements Publisher<Object> {
     //  https://stackoverflow.com/questions/46380073/observer-is-deprecated-in-java-9-what-should-we-use-instead-of-it
 
     /**
-     * Game Observer
+     * Game Subscriber
      */
-    private static class GameSubscriber implements Subscriber<Object> {
+    private static class GameSubscriber implements Subscriber <Object> {
 
         private Subscription subscription;
 
         @Override
-        public void onSubscribe(Subscription subscription) {
+        public void onSubscribe (Subscription subscription) {
             this.subscription = subscription;
             subscription.request(1); // Request initial batch of 1 event
         }
 
         @Override
-        public void onNext(Object item) {
+        public void onNext (Object item) {
             handleGameEvent(item);
             subscription.request(1); // Request next batch of 1 event
         }
 
-        private void handleGameEvent(Object event) {
+        private void handleGameEvent (Object ignored) {
             if (GUI_Contents.get().getGame().isAIPlayer(GUI_Contents.get().getGameBoard().currentPlayer())
                     && !GUI_Contents.get().getGameBoard().currentPlayer().isInCheckmate()
                     && !GUI_Contents.get().getGameBoard().currentPlayer().isInStalemate()
-                    && !GUI_Contents.get().isDrawByLackOfMaterial()) {
+                    && !GUI_Contents.get().isDrawByLackOfMaterial()
+                    && !GUI_Contents.get().isDrawByRepetition()) {
                 // execute the AI
                 final backGroundThreadForAI thread = new backGroundThreadForAI();
                 thread.execute();
@@ -315,18 +329,18 @@ public class GUI_Contents implements Publisher<Object> {
                 }
 
                 if (GUI_Contents.get().getGameBoard().currentPlayer().isInStalemate()) {
-                    System.out.println("game over, " + GUI_Contents.get().getGameBoard().currentPlayer()+ " is in stalemate!");
+                    System.out.println("game over, " + GUI_Contents.get().getGameBoard().currentPlayer() + " is in stalemate!");
                 }
             }
         }
 
         @Override
-        public void onError(Throwable throwable) {
+        public void onError (Throwable throwable) {
             throwable.printStackTrace();
         }
 
         @Override
-        public void onComplete() {
+        public void onComplete () {
             System.out.println("Game over!");
         }
     }
@@ -334,31 +348,32 @@ public class GUI_Contents implements Publisher<Object> {
     /**
      * SwingWorker using threads to do the work in the background instead of the thread of the gui
      */
-    private static class backGroundThreadForAI extends SwingWorker<Move, String> {
-        private backGroundThreadForAI() {
+    private static class backGroundThreadForAI extends SwingWorker <Move, String> {
+        private backGroundThreadForAI () {
         }
 
         // what should be done in the background thread
         @Override
-        protected Move doInBackground() {
+        protected Move doInBackground () {
             // TODO: implement difference between random and actual algorithm
             final AI alphaBeta = new AlphaBetaPruning(GUI_Contents.get().gameDialog.getSearchDepth());
             final Move move = alphaBeta.execute(GUI_Contents.get().getGameBoard());
             if (move.isAttack()) {
-                GUI_Contents.get().audioHandler.playSound(1);
+                AudioHandler.playSound(1);
             } else {
-                GUI_Contents.get().audioHandler.playSound(0);
+                AudioHandler.playSound(0);
             }
             return move;
         }
 
         @Override
-        protected void done() {
+        protected void done () {
             try {
                 final Move executedMove = get();
                 GUI_Contents.get().updateComputerMove(executedMove);
                 GUI_Contents.get().updateGameBoard(GUI_Contents.get().getGameBoard().currentPlayer().makeMove(executedMove).getTransitionBoard());
                 GUI_Contents.get().getMoveLog().addMove(executedMove);
+                GUI_Contents.get().getPositionLog().add(FenParser.parseFen(executedMove.getBoard()));
                 GUI_Contents.get().getTakenPieces().refresh(GUI_Contents.get().getMoveLog());
                 GUI_Contents.get().getChessBoard().drawBoard(GUI_Contents.get().getGameBoard());
                 GUI_Contents.get().moveMadeUpdate(PlayerType.COMPUTER);
@@ -370,69 +385,74 @@ public class GUI_Contents implements Publisher<Object> {
     }
 
     /**
-     * @param playerType to notify the observer of the new Player-type
+     * @param playerType to notify the subscriber of the new Player-type
      */
-    private void moveMadeUpdate(final PlayerType playerType) {
-        notifyObservers(playerType);
+    private void moveMadeUpdate (final PlayerType playerType) {
+        notifySubscribers(playerType);
     }
 
-    private ChessBoard getChessBoard() {
+    private ChessBoard getChessBoard () {
         return this.chessBoard;
     }
 
-    private TakenPieces getTakenPieces() {
+    private TakenPieces getTakenPieces () {
         return this.takenPieces;
     }
 
-    private MoveLog getMoveLog() {
+    private MoveLog getMoveLog () {
         return this.moveLog;
+    }
+
+    private ArrayList <String> getPositionLog () {
+        return this.positionLog;
     }
 
     /**
      * @param executedMove to update the current Computer Move and keep track of it
      */
-    public void updateComputerMove(final Move executedMove) {
+    public void updateComputerMove (final Move executedMove) {
         this.computerMove = executedMove;
     }
 
     /**
      * @param board Board to update Board outside of Singleton
      */
-    public void updateGameBoard(final Board board) {
+    public void updateGameBoard (final Board board) {
         this.board = board;
     }
 
     /**
      * removes all the moves and creates new Standard Board
      */
-    private void reset() {
+    private void reset () {
         if (moveLog.getMoves().isEmpty()) {
             return;
         }
         this.board = Board.createStandardBoard();
         this.moveLog.clear();
+        this.positionLog.clear();
         this.takenPieces.refresh(this.moveLog);
         chessBoard.drawBoard(board);
-        audioHandler.playSound(2);
+        AudioHandler.playSound(2);
     }
 
     /**
      * visualizes the starting board with sound
      */
-    private void beginBoard() {
+    private void beginBoard () {
         if (this.moveLog.getMoves().isEmpty()) {
             return;
         }
         this.movingEnabled = false;
         currentMove = 0;
         chessBoard.drawBoard(this.moveLog.getMoves().get(0).getBoard());
-        audioHandler.playSound(0);
+        AudioHandler.playSound(0);
     }
 
     /**
      * visualizes the end board with sound
      */
-    private void endBoard() {
+    private void endBoard () {
         this.movingEnabled = true;
         if (currentMove == this.moveLog.size() - 1
                 || this.moveLog.getMoves().isEmpty()) {
@@ -440,20 +460,24 @@ public class GUI_Contents implements Publisher<Object> {
         }
         currentMove = this.moveLog.size() - 1;
         chessBoard.drawBoard(this.board);
-        audioHandler.playSound(0);
+        AudioHandler.playSound(0);
     }
 
     /**
      * visualizes the previous move with sound
      */
-    private void prevMove() {
+    private void prevMove () {
         if (currentMove > 0 && this.moveLog != null && this.moveLog.size() > 0) {
             currentMove--;
             chessBoard.drawBoard(this.moveLog.getMoves().get(currentMove).getBoard());
             this.movingEnabled = false;
+
             if (this.moveLog.getMoves().get(currentMove).isAttack()) {
-                audioHandler.playSound(1);
-            } else audioHandler.playSound(0);
+                AudioHandler.playSound(1);
+            } else {
+                AudioHandler.playSound(0);
+            }
+
         } else {
             this.movingEnabled = true;
         }
@@ -462,19 +486,19 @@ public class GUI_Contents implements Publisher<Object> {
     /**
      * visualizes the next move with sound
      */
-    private void nextMove() {
+    private void nextMove () {
         if (currentMove < moveLog.size()) {
             if (currentMove == moveLog.size() - 1) {
                 if (this.moveLog.getMoves().get(currentMove).isAttack()) {
-                    audioHandler.playSound(1);
-                } else audioHandler.playSound(0);
+                    AudioHandler.playSound(1);
+                } else AudioHandler.playSound(0);
                 currentMove++;
                 this.movingEnabled = true;
                 chessBoard.drawBoard(this.board);
             } else {
                 if (this.moveLog.getMoves().get(currentMove).isAttack()) {
-                    audioHandler.playSound(1);
-                } else audioHandler.playSound(0);
+                    AudioHandler.playSound(1);
+                } else AudioHandler.playSound(0);
                 currentMove++;
                 chessBoard.drawBoard(this.moveLog.getMoves().get(currentMove).getBoard());
                 this.movingEnabled = false;
@@ -486,7 +510,7 @@ public class GUI_Contents implements Publisher<Object> {
     /**
      * @return if there is a lack of material to mate someone
      */
-    public boolean isDrawByLackOfMaterial() {
+    public boolean isDrawByLackOfMaterial () {
         if (this.board.getBlackPieces().size() <= 2 && this.board.getWhitePieces().size() <= 2) {
             if ((this.board.getBlackPieces().stream().anyMatch(piece -> piece instanceof Bishop || piece instanceof Knight) || this.board.getBlackPieces().size() == 1)
                     && (this.board.getWhitePieces().stream().anyMatch(piece -> piece instanceof Bishop || piece instanceof Knight) || this.board.getWhitePieces().size() == 1)) {
@@ -501,13 +525,16 @@ public class GUI_Contents implements Publisher<Object> {
     }
 
     /**
-     * @param move pass in the move to check for draw by repetition
      * @return true if it is a move resulting in a draw
      */
 
-    // TODO: implement repetition
-    public boolean isDrawByRepetition(final Move move) {
-        return false;
+    public boolean isDrawByRepetition () {
+        if (this.positionLog.size() < 6) {
+            return false;
+        }
+        final Map <String, Long> amount = positionLog.stream().collect(Collectors.groupingBy(c -> c, Collectors.counting()));
+        amount.forEach((k, v) -> System.out.println(v > 2 ? v : ""));
+        return amount.containsValue(3L);
     }
 
     /**
@@ -516,30 +543,32 @@ public class GUI_Contents implements Publisher<Object> {
     public enum BoardDirection {
         NORMAL {
             @Override
-            List<SquareGUI> traverse(List<SquareGUI> squares) {
+            List <SquareGUI> traverse (List <SquareGUI> squares) {
                 return squares;
             }
 
             @Override
-            BoardDirection opposite() {
+            BoardDirection opposite () {
                 return FLIPPED;
             }
         },
         FLIPPED {
             @Override
-            List<SquareGUI> traverse(List<SquareGUI> squares) {
-                final List<SquareGUI> viewOnly = new ArrayList<>(squares);
+            List <SquareGUI> traverse (List <SquareGUI> squares) {
+                final List <SquareGUI> viewOnly = new ArrayList <>(squares);
                 Collections.reverse(viewOnly);
                 return Collections.unmodifiableList(viewOnly);
             }
 
             @Override
-            BoardDirection opposite() {
+            BoardDirection opposite () {
                 return NORMAL;
             }
         };
-        abstract List<SquareGUI> traverse(final List<SquareGUI> squares);
-        abstract BoardDirection opposite();
+
+        abstract List <SquareGUI> traverse (final List <SquareGUI> squares);
+
+        abstract BoardDirection opposite ();
     }
 
     /**
@@ -547,14 +576,14 @@ public class GUI_Contents implements Publisher<Object> {
      */
     private class ChessBoard extends JPanel {
 
-        final List<SquareGUI> boardSquares;
+        final List <SquareGUI> boardSquares;
 
-        ChessBoard() {
+        ChessBoard () {
             super(new GridLayout(8, 8));
-            this.boardSquares = new ArrayList<>();
+            this.boardSquares = new ArrayList <>();
 
             for (int i = 0; i < BoardUtilities.NUM_SQUARES; i++) {
-                final SquareGUI square = new SquareGUI(this, i);
+                final SquareGUI square = new SquareGUI(i);
                 this.boardSquares.add(square);
                 this.add(square);
             }
@@ -565,9 +594,9 @@ public class GUI_Contents implements Publisher<Object> {
         /**
          * @param board the Board being drawn to refresh the view
          */
-        public void drawBoard(final Board board) {
+        public void drawBoard (final Board board) {
             removeAll();
-            for (final SquareGUI square: boardDirection.traverse(boardSquares)) {
+            for (final SquareGUI square : boardDirection.traverse(boardSquares)) {
                 square.drawSquare(board);
                 add(square);
             }
@@ -580,34 +609,26 @@ public class GUI_Contents implements Publisher<Object> {
      * ArrayList of all Moves
      */
     public static class MoveLog {
-        private final List<Move> moves;
+        private final List <Move> moves;
 
-        MoveLog() {
-            this.moves = new ArrayList<>();
+        MoveLog () {
+            this.moves = new ArrayList <>();
         }
 
-        public List<Move> getMoves() {
+        public List <Move> getMoves () {
             return this.moves;
         }
 
-        public void addMove(final Move move) {
+        public void addMove (final Move move) {
             this.moves.add(move);
         }
 
-        public int size() {
+        public int size () {
             return this.moves.size();
         }
 
-        public void clear() {
+        public void clear () {
             this.moves.clear();
-        }
-
-        public Move removeMove(final int index) {
-            return this.moves.remove(index);
-        }
-
-        public boolean removeMove(final Move move) {
-            return this.moves.remove(move);
         }
 
     }
@@ -615,9 +636,9 @@ public class GUI_Contents implements Publisher<Object> {
     /**
      * Computer or Human Player enum
      */
-    protected enum PlayerType{
+    protected enum PlayerType {
         HUMAN,
-        COMPUTER;
+        COMPUTER
     }
 
     /**
@@ -627,7 +648,7 @@ public class GUI_Contents implements Publisher<Object> {
 
         private final int squareID;
 
-        SquareGUI(final ChessBoard chessBoard, final int squareID) {
+        SquareGUI (final int squareID) {
             super(new GridBagLayout());
             this.squareID = squareID;
             this.setPreferredSize(SQUARE_DIMENSION);
@@ -641,11 +662,13 @@ public class GUI_Contents implements Publisher<Object> {
         /**
          * @return MouseListener for managing moves made by user
          */
-        private MouseListener createMouseListener() {
+        private MouseListener createMouseListener () {
             return new MouseListener() {
                 @Override
-                public void mouseClicked(final MouseEvent e) {
-                    if (!movingEnabled) {return;}
+                public void mouseClicked (final MouseEvent e) {
+                    if (!movingEnabled) {
+                        return;
+                    }
                     if (isLeftMouseButton(e)) {
                         // first Click
                         if (sourceSquare == null) {
@@ -657,8 +680,7 @@ public class GUI_Contents implements Publisher<Object> {
                             } else if (movedPiece.getPieceTeam() != board.currentPlayer().getTeam()) {
                                 sourceSquare = null;
                             }
-                        }
-                        else { // second Click
+                        } else { // second Click
                             destinationSquare = board.getSquare(squareID);
                             // if same square is clicked, reset
                             if (sourceSquare == destinationSquare) {
@@ -723,16 +745,17 @@ public class GUI_Contents implements Publisher<Object> {
                             final MoveTransition transition = board.currentPlayer().makeMove(move);
                             if (transition.getMoveStatus().isDone()) {
                                 if (move.isAttack()) {
-                                    audioHandler.playSound(1);
+                                    AudioHandler.playSound(1);
                                 } else if (transition.getTransitionBoard().blackPlayer().isInCheckmate()
                                         || transition.getTransitionBoard().whitePlayer().isInCheckmate()) {
-                                    audioHandler.playSound(2);
+                                    AudioHandler.playSound(2);
                                 } else {
-                                    audioHandler.playSound(0);
+                                    AudioHandler.playSound(0);
                                 }
                                 currentMove++;
                                 board = transition.getTransitionBoard();
                                 moveLog.addMove(move);
+                                positionLog.add(FenParser.parseFen(transition.getTransitionBoard()));
                             }
                             sourceSquare = null;
                             destinationSquare = null;
@@ -752,21 +775,29 @@ public class GUI_Contents implements Publisher<Object> {
                         SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
                     }
                 }
+
                 @Override
-                public void mousePressed(final MouseEvent e) {}
+                public void mousePressed (final MouseEvent e) {
+                }
+
                 @Override
-                public void mouseReleased(final MouseEvent e) {}
+                public void mouseReleased (final MouseEvent e) {
+                }
+
                 @Override
-                public void mouseEntered(final MouseEvent e) {}
+                public void mouseEntered (final MouseEvent e) {
+                }
+
                 @Override
-                public void mouseExited(final MouseEvent e) {}
+                public void mouseExited (final MouseEvent e) {
+                }
             };
         }
 
         /**
          * @param board to get the Piece that is on the Square to generate an image
          */
-        private void assignSquareIcon(final Board board) {
+        private void assignSquareIcon (final Board board) {
             this.removeAll();
             if (board.getSquare(this.squareID).isOccupied()) {
                 try {
@@ -775,7 +806,7 @@ public class GUI_Contents implements Publisher<Object> {
                                     .getPiece().getPieceTeam().toString()
                                     .charAt(0) + board.getSquare(this.squareID)
                                     .getPiece().toString() + ".png")
-                            );
+                    );
                     add(new JLabel(new ImageIcon(image.getScaledInstance(30, 60, 0))));
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -786,9 +817,9 @@ public class GUI_Contents implements Publisher<Object> {
         /**
          * @param board to highlight all the legal moves on the board
          */
-        private void highlightLegalMoves(final Board board) {
+        private void highlightLegalMoves (final Board board) {
             if (highlightLegalMovesActive) {
-                for (final Move move: pieceLegalMoves(board)) {
+                for (final Move move : pieceLegalMoves(board)) {
                     if (move.getDestinationCoordinate() == squareID) {
                         try {
                             add(new JLabel(new ImageIcon(ImageIO.read(new File(misc + "highlighting.png"))
@@ -805,21 +836,21 @@ public class GUI_Contents implements Publisher<Object> {
          * @param board to filter out all the legal moves on the board, filtering out moves that leave in check and duplicate moves
          * @return all visually important legal moves
          */
-        private Collection<Move> pieceLegalMoves(final Board board) {
+        private Collection <Move> pieceLegalMoves (final Board board) {
             if (movedPiece != null && movedPiece.getPieceTeam() == board.currentPlayer().getTeam()) {
                 return movedPiece.calcLegalMoves(board).stream().filter
-                                (move -> {
-                                    if (board.currentPlayer().makeMove(move).getMoveStatus() == MoveStatus.DONE) {
-                                        if (move instanceof PawnPromotion) {
-                                            // Check if the move is a pawn promotion move
-                                            // and if so, only allow one of the four possible promotion moves
-                                            Piece promotedPiece = ((PawnPromotion) move).getPromotedToPiece();
-                                            return promotedPiece instanceof Bishop;
-                                        }
-                                        return true;
-                                    }
-                                    return false;
-                                }).collect(Collectors.toList());
+                        (move -> {
+                            if (board.currentPlayer().makeMove(move).getMoveStatus() == MoveStatus.DONE) {
+                                if (move instanceof PawnPromotion) {
+                                    // Check if the move is a pawn promotion move
+                                    // and if so, only allow one of the four possible promotion moves
+                                    Piece promotedPiece = ((PawnPromotion) move).getPromotedToPiece();
+                                    return promotedPiece instanceof Bishop;
+                                }
+                                return true;
+                            }
+                            return false;
+                        }).collect(Collectors.toList());
             }
             // if we are clicking on a piece that is not ours e.g.
             return Collections.emptyList();
@@ -828,8 +859,11 @@ public class GUI_Contents implements Publisher<Object> {
         /**
          * @param board passed in Board to check for mate, checks and stalemate
          */
-        private void signifyCheck(final Board board) {
+        private void signifyCheck (final Board board) {
             Color red = new Color(152, 40, 0);
+            if (moveLog.size() < 1) {
+                return;
+            }
             if (board.blackPlayer().isInCheck()) {
                 if (!board.blackPlayer().isInCheckmate()) {
                     red = red.brighter();
@@ -857,23 +891,28 @@ public class GUI_Contents implements Publisher<Object> {
                         || board.blackPlayer().getPlayerKing().getPiecePosition() == this.squareID) {
                     this.setBackground(Color.GRAY);
                 }
+            } else if (isDrawByRepetition()) {
+                if (board.whitePlayer().getPlayerKing().getPiecePosition() == this.squareID
+                        || board.blackPlayer().getPlayerKing().getPiecePosition() == this.squareID) {
+                    this.setBackground(Color.GRAY);
+                }
             }
         }
 
         /**
          * @return the Color of the Square
          */
-        private Color assignSquareColour() {
+        private Color assignSquareColour () {
             if (BoardUtilities.FIRST_ROW[this.squareID]
-                || BoardUtilities.THIRD_ROW[this.squareID]
-                || BoardUtilities.FIFTH_ROW[this.squareID]
-                || BoardUtilities.SEVENTH_ROW[this.squareID]) {
-                return (this.squareID%2 == 0 ? lightColour : darkColour);
+                    || BoardUtilities.THIRD_ROW[this.squareID]
+                    || BoardUtilities.FIFTH_ROW[this.squareID]
+                    || BoardUtilities.SEVENTH_ROW[this.squareID]) {
+                return (this.squareID % 2 == 0 ? lightColour : darkColour);
             } else if (BoardUtilities.SECOND_ROW[this.squareID]
                     || BoardUtilities.FOURTH_ROW[this.squareID]
                     || BoardUtilities.SIXTH_ROW[this.squareID]
                     || BoardUtilities.EIGHTH_ROW[this.squareID]) {
-                return (this.squareID%2 != 0 ? lightColour : darkColour);
+                return (this.squareID % 2 != 0 ? lightColour : darkColour);
             }
             throw new RuntimeException("Square is off the bounds of the board.");
         }
@@ -881,7 +920,7 @@ public class GUI_Contents implements Publisher<Object> {
         /**
          * @param board to pass in all of the above methods -> draws one single Square
          */
-        public void drawSquare(final Board board) {
+        public void drawSquare (final Board board) {
             setBackground(assignSquareColour());
             assignSquareIcon(board);
             highlightLegalMoves(board);
@@ -900,13 +939,13 @@ public class GUI_Contents implements Publisher<Object> {
         private final JPanel EAST;
         private static final Dimension DIMENSION = new Dimension(600, 70);
 
-        public TakenPieces() {
+        public TakenPieces () {
             super(new BorderLayout());
             JPanel bottom = new JPanel();
             bottom.setPreferredSize(new Dimension(600, 5));
             this.setPreferredSize(DIMENSION);
-            this.WEST = new JPanel(new GridLayout(2,8)); // 8 * 2 -> 16 pieces
-            this.EAST = new JPanel(new GridLayout(2,8)); // 8 * 2 -> 16 pieces
+            this.WEST = new JPanel(new GridLayout(2, 8)); // 8 * 2 -> 16 pieces
+            this.EAST = new JPanel(new GridLayout(2, 8)); // 8 * 2 -> 16 pieces
 
             this.add(this.WEST, BorderLayout.WEST);
             this.add(this.EAST, BorderLayout.EAST);
@@ -917,12 +956,12 @@ public class GUI_Contents implements Publisher<Object> {
          * @param moveLog passed in to look for Attacking Moves
          *                , which have an attacked Piece -> so it will be a "Taken Piece"
          */
-        public void refresh(final MoveLog moveLog) {
+        public void refresh (final MoveLog moveLog) {
             this.EAST.removeAll();
             this.WEST.removeAll();
 
-            final List<Piece> whiteTakenPieces = new ArrayList<>();
-            final List<Piece> blackTakenPieces = new ArrayList<>();
+            final List <Piece> whiteTakenPieces = new ArrayList <>();
+            final List <Piece> blackTakenPieces = new ArrayList <>();
 
             moveLog.getMoves().forEach(move -> {
                 if (move.isAttack()) {
@@ -938,7 +977,7 @@ public class GUI_Contents implements Publisher<Object> {
             whiteTakenPieces.sort(Comparator.comparingInt(Piece::getPieceValue));
             blackTakenPieces.sort(Comparator.comparingInt(Piece::getPieceValue));
 
-            for (final Piece takenPiece: whiteTakenPieces) {
+            for (final Piece takenPiece : whiteTakenPieces) {
                 try {
                     this.EAST.add(new JLabel(new ImageIcon(ImageIO.read(new File(path
                             + takenPiece.getPieceTeam().toString().charAt(0)
@@ -949,7 +988,7 @@ public class GUI_Contents implements Publisher<Object> {
                 }
             }
 
-            for (final Piece takenPiece: blackTakenPieces) {
+            for (final Piece takenPiece : blackTakenPieces) {
                 try {
                     this.WEST.add(new JLabel(new ImageIcon(ImageIO.read(new File(path
                             + takenPiece.getPieceTeam().toString().charAt(0)
@@ -963,6 +1002,7 @@ public class GUI_Contents implements Publisher<Object> {
             repaint();
         }
     }
+
     /**
      * Popup dialog for Promoting a Promotion Pawn
      */
@@ -970,15 +1010,15 @@ public class GUI_Contents implements Publisher<Object> {
 
         private PieceType selectedPieceType;
 
-        public PromotionDialog(JFrame parent, Team pieceColor) {
+        public PromotionDialog (JFrame parent, Team pieceColor) {
             super(parent, "Promotion", true);
-            final String team = pieceColor.toString().substring(0,1);
+            final String team = pieceColor.toString().substring(0, 1);
 
             // Create buttons for each promotion piece
-            JButton queenButton = new JButton(new ImageIcon(path + team +"Q.png"));
-            JButton rookButton = new JButton(new ImageIcon(path + team +"R.png"));
-            JButton bishopButton = new JButton(new ImageIcon(path + team +"B.png"));
-            JButton knightButton = new JButton(new ImageIcon(path + team +"N.png"));
+            JButton queenButton = new JButton(new ImageIcon(path + team + "Q.png"));
+            JButton rookButton = new JButton(new ImageIcon(path + team + "R.png"));
+            JButton bishopButton = new JButton(new ImageIcon(path + team + "B.png"));
+            JButton knightButton = new JButton(new ImageIcon(path + team + "N.png"));
 
             queenButton.setFocusable(false);
             rookButton.setFocusable(false);
@@ -1011,11 +1051,11 @@ public class GUI_Contents implements Publisher<Object> {
             this.add(panel);
             // Set size and visibility
             this.pack();
-            this.setLocationRelativeTo(parent);
+            this.setLocation(new Point(parent.getMousePosition(true).x + 385, parent.getMousePosition(true).y));
             this.setVisible(true);
         }
 
-        public PieceType getSelectedPieceType() {
+        public PieceType getSelectedPieceType () {
             return this.selectedPieceType;
         }
     }
@@ -1027,12 +1067,12 @@ public class GUI_Contents implements Publisher<Object> {
 
         private GUI_Contents.PlayerType whitePlayerType;
         private GUI_Contents.PlayerType blackPlayerType;
-        private JSpinner searchDepthSpinner;
+        private final JSpinner searchDepthSpinner;
 
         private static final String HUMAN_TEXT = "Human";
         private static final String COMPUTER_TEXT = "Computer";
 
-        public GameDialog(final JFrame parent) {
+        public GameDialog (final JFrame parent) {
             super(parent, "Game", true);
             final JPanel myPanel = new JPanel(new GridLayout(0, 1));
             final JRadioButton whiteHumanButton = new JRadioButton(HUMAN_TEXT);
@@ -1084,24 +1124,28 @@ public class GUI_Contents implements Publisher<Object> {
             setVisible(false);
         }
 
-        void promptUser(JFrame parent) {
+        void promptUser (JFrame parent) {
             setLocationRelativeTo(parent);
             setVisible(true);
             repaint();
         }
 
-        boolean isAIPlayer(final Player player) {
-            if(player.getTeam() == Team.WHITE) {
+        boolean isAIPlayer (final Player player) {
+            if (player.getTeam() == Team.WHITE) {
                 return getWhitePlayerType() == GUI_Contents.PlayerType.COMPUTER;
             }
             return getBlackPlayerType() == GUI_Contents.PlayerType.COMPUTER;
         }
 
-        GUI_Contents.PlayerType getWhitePlayerType() {return this.whitePlayerType;}
+        GUI_Contents.PlayerType getWhitePlayerType () {
+            return this.whitePlayerType;
+        }
 
-        GUI_Contents.PlayerType getBlackPlayerType() {return this.blackPlayerType;}
+        GUI_Contents.PlayerType getBlackPlayerType () {
+            return this.blackPlayerType;
+        }
 
-        private static JSpinner addLabeledSpinner(final Container c, final SpinnerModel model) {
+        private static JSpinner addLabeledSpinner (final Container c, final SpinnerModel model) {
             final JLabel l = new JLabel("Search Depth");
             c.add(l);
             final JSpinner spinner = new JSpinner(model);
@@ -1110,8 +1154,8 @@ public class GUI_Contents implements Publisher<Object> {
             return spinner;
         }
 
-        int getSearchDepth() {
-            return (Integer)this.searchDepthSpinner.getValue();
+        int getSearchDepth () {
+            return (Integer) this.searchDepthSpinner.getValue();
         }
     }
 }

@@ -14,7 +14,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-/** recursive algorithm for alpha beta pruning -> WIP
+/**
+ * recursive algorithm for alpha beta pruning -> WIP
+ *
  * @author Nicolas Frey
  * @version 1.0
  */
@@ -23,31 +25,31 @@ public class AlphaBetaPruning implements AI {
     private final ExecutorService executorService;
     private final int searchDepth;
 
-    public AlphaBetaPruning(final int searchDepth) {
-        this.executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1);
+    public AlphaBetaPruning (final int searchDepth) {
+        this.executorService = Executors.newFixedThreadPool (Runtime.getRuntime ().availableProcessors () - 1);
         this.searchDepth = searchDepth;
     }
 
     @Override
-    public Move execute(final Board board) {
-        List<Move> legalMoves = new ArrayList<>(board.currentPlayer().getLegalMoves());
+    public Move execute (final Board board) {
+        List <Move> legalMoves = new ArrayList <> (board.currentPlayer ().getLegalMoves ());
 
-        AtomicReference<Move> bestMove = new AtomicReference<>(Move.MoveFactory.getNullMove());
-        AtomicInteger highestSeenValue = new AtomicInteger(Integer.MIN_VALUE);
-        AtomicInteger lowestSeenValue = new AtomicInteger(Integer.MAX_VALUE);
+        AtomicReference <Move> bestMove = new AtomicReference <> (Move.MoveFactory.getNullMove ());
+        AtomicInteger highestSeenValue = new AtomicInteger (Integer.MIN_VALUE);
+        AtomicInteger lowestSeenValue = new AtomicInteger (Integer.MAX_VALUE);
 
         for (final Move move : legalMoves) {
-            executorService.submit(() -> {
-                final MoveTransition moveTransition = board.currentPlayer().makeMove(move);
-                if (moveTransition.getMoveStatus().isDone()) {
-                    final int currentValue = alphabeta(moveTransition.getTransitionBoard(), this.searchDepth - 1, Integer.MIN_VALUE, Integer.MAX_VALUE,true);
+            executorService.submit (() -> {
+                final MoveTransition moveTransition = board.currentPlayer ().makeMove (move);
+                if (moveTransition.getMoveStatus ().isDone ()) {
+                    final int currentValue = alphaBeta(moveTransition.getTransitionBoard (), this.searchDepth - 1, Integer.MIN_VALUE, Integer.MAX_VALUE, true);
                     synchronized (this) {
-                        if (board.currentPlayer().getTeam().isWhite() && currentValue >= highestSeenValue.get()) {
-                            highestSeenValue.set(currentValue);
-                            bestMove.set(move);
-                        } else if (board.currentPlayer().getTeam().isBlack() && currentValue <= lowestSeenValue.get()) {
-                            lowestSeenValue.set(currentValue);
-                            bestMove.set(move);
+                        if (board.currentPlayer ().getTeam ().isWhite () && currentValue >= highestSeenValue.get ()) {
+                            highestSeenValue.set (currentValue);
+                            bestMove.set (move);
+                        } else if (board.currentPlayer ().getTeam ().isBlack () && currentValue <= lowestSeenValue.get ()) {
+                            lowestSeenValue.set (currentValue);
+                            bestMove.set (move);
                         }
                     }
                 }
@@ -55,29 +57,29 @@ public class AlphaBetaPruning implements AI {
         }
 
         // Wait for all threads to complete
-        executorService.shutdown();
+        executorService.shutdown ();
         try {
-            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+            executorService.awaitTermination (Long.MAX_VALUE, TimeUnit.NANOSECONDS);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            e.printStackTrace ();
         }
 
-        return bestMove.get();
+        return bestMove.get ();
     }
 
-    private int alphabeta(Board board, int depth, int alpha, int beta, boolean maximizingPlayer) {
+    private int alphaBeta (Board board, int depth, int alpha, int beta, boolean maximizingPlayer) {
         if (depth == 0) {
-            return Evaluator.evaluate(board);
+            return Evaluator.evaluate (board);
         }
 
         if (maximizingPlayer) {
             int maxEval = Integer.MIN_VALUE;
-            for (final Move move : board.currentPlayer().getLegalMoves()) {
-                final MoveTransition moveTransition = board.currentPlayer().makeMove(move);
-                if (moveTransition.getMoveStatus().isDone()) {
-                    int eval = alphabeta(moveTransition.getTransitionBoard(), depth - 1, alpha, beta, false);
-                    maxEval = Math.max(maxEval, eval);
-                    alpha = Math.max(alpha, eval);
+            for (final Move move : board.currentPlayer ().getLegalMoves ()) {
+                final MoveTransition moveTransition = board.currentPlayer ().makeMove (move);
+                if (moveTransition.getMoveStatus ().isDone ()) {
+                    int eval = alphaBeta(moveTransition.getTransitionBoard (), depth - 1, alpha, beta, false);
+                    maxEval = Math.max (maxEval, eval);
+                    alpha = Math.max (alpha, eval);
                     if (beta <= alpha) {
                         break;
                     }
@@ -86,12 +88,12 @@ public class AlphaBetaPruning implements AI {
             return maxEval;
         } else {
             int minEval = Integer.MAX_VALUE;
-            for (final Move move : board.currentPlayer().getLegalMoves()) {
-                final MoveTransition moveTransition = board.currentPlayer().makeMove(move);
-                if (moveTransition.getMoveStatus().isDone()) {
-                    int eval = alphabeta(moveTransition.getTransitionBoard(), depth - 1, alpha, beta, true);
-                    minEval = Math.min(minEval, eval);
-                    beta = Math.min(beta, eval);
+            for (final Move move : board.currentPlayer ().getLegalMoves ()) {
+                final MoveTransition moveTransition = board.currentPlayer ().makeMove (move);
+                if (moveTransition.getMoveStatus ().isDone ()) {
+                    int eval = alphaBeta(moveTransition.getTransitionBoard (), depth - 1, alpha, beta, true);
+                    minEval = Math.min (minEval, eval);
+                    beta = Math.min (beta, eval);
                     if (beta <= alpha) {
                         break;
                     }

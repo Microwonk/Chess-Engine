@@ -11,47 +11,47 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-// for MajorMove and AttackingMove
-import static main.java.net.chess.engine.board.Move.*;
+import static main.java.net.chess.engine.board.Move.MajorAttackMove;
+import static main.java.net.chess.engine.board.Move.MajorMove;
 
 public class Queen extends Piece {
 
     private final static int[] POSSIBLE_MOVE_COORDINATES = {-9, -8, -7, -1, 1, 7, 8, 9};
 
-    public Queen(final int piecePosition, final Team pieceTeam) {
-        super(piecePosition, pieceTeam, PieceType.QUEEN, true);
+    public Queen (final int piecePosition, final Team pieceTeam) {
+        super (piecePosition, pieceTeam, PieceType.QUEEN, true);
     }
 
-    public Queen(final int piecePosition, final Team pieceTeam, final boolean isFirstMove) {
-        super(piecePosition, pieceTeam, PieceType.ROOK, isFirstMove);
+    public Queen (final int piecePosition, final Team pieceTeam, final boolean isFirstMove) {
+        super (piecePosition, pieceTeam, PieceType.ROOK, isFirstMove);
     }
 
     @Override
-    public Collection<Move> calcLegalMoves(final Board board) {
-        final List<Move> legalMoves = new ArrayList<>();
+    public Collection <Move> calcLegalMoves (final Board board) {
+        final List <Move> legalMoves = new ArrayList <> ();
 
-        for (final int candidateCoordinateOffset: POSSIBLE_MOVE_COORDINATES) {
+        for (final int candidateCoordinateOffset : POSSIBLE_MOVE_COORDINATES) {
             int candidateDestinationCoordinate = this.piecePosition;
 
-            while(BoardUtilities.isValidSquareCoordinate(candidateDestinationCoordinate)) {
-                if (isFirstColumnExclusion(candidateDestinationCoordinate, candidateCoordinateOffset)
-                        || isEighthColumnExclusion(candidateDestinationCoordinate, candidateCoordinateOffset)) {
+            while (BoardUtilities.isValidSquareCoordinate (candidateDestinationCoordinate)) {
+                if (isFirstColumnExclusion (candidateDestinationCoordinate, candidateCoordinateOffset)
+                        || isEighthColumnExclusion (candidateDestinationCoordinate, candidateCoordinateOffset)) {
                     break;
                 }
 
                 candidateDestinationCoordinate += candidateCoordinateOffset;
 
-                if (BoardUtilities.isValidSquareCoordinate(candidateDestinationCoordinate)) {
-                    final Square candidateDestinationSquare = board.getSquare(candidateDestinationCoordinate);
+                if (BoardUtilities.isValidSquareCoordinate (candidateDestinationCoordinate)) {
+                    final Square candidateDestinationSquare = board.getSquare (candidateDestinationCoordinate);
 
-                    if(!candidateDestinationSquare.isOccupied()) {
-                        legalMoves.add(new MajorMove(board, this, candidateDestinationCoordinate));
+                    if (!candidateDestinationSquare.isOccupied ()) {
+                        legalMoves.add (new MajorMove (board, this, candidateDestinationCoordinate));
                     } else {
-                        final Piece pieceAtDestination = candidateDestinationSquare.getPiece();
-                        final Team pieceTeam = candidateDestinationSquare.getPiece().getPieceTeam();
+                        final Piece pieceAtDestination = candidateDestinationSquare.getPiece ();
+                        final Team pieceTeam = candidateDestinationSquare.getPiece ().getPieceTeam ();
 
                         if (this.pieceTeam != pieceTeam) {
-                            legalMoves.add(new MajorAttackMove(board, this, candidateDestinationCoordinate, pieceAtDestination));
+                            legalMoves.add (new MajorAttackMove (board, this, candidateDestinationCoordinate, pieceAtDestination));
                         }
                         // if a piece is there it will stop looping to the next diagonal square
                         break;
@@ -59,26 +59,26 @@ public class Queen extends Piece {
                 }
             }
         }
-        return Collections.unmodifiableList(legalMoves);
+        return Collections.unmodifiableList (legalMoves);
     }
 
-    private static boolean isFirstColumnExclusion(final int currentPosition, final int candidateOffset) {
+    private static boolean isFirstColumnExclusion (final int currentPosition, final int candidateOffset) {
         return BoardUtilities.FIRST_COLUMN[currentPosition]
                 && (candidateOffset == -1 || candidateOffset == -9 || candidateOffset == 7);
     }
 
-    private static boolean isEighthColumnExclusion(final int currentPosition, final int candidateOffset) {
+    private static boolean isEighthColumnExclusion (final int currentPosition, final int candidateOffset) {
         return BoardUtilities.EIGHTH_COLUMN[currentPosition]
                 && (candidateOffset == 1 || candidateOffset == 9 || candidateOffset == -7);
     }
 
     @Override
-    public Queen movePiece(Move move) {
-        return new Queen(move.getDestinationCoordinate(), move.getPiece().getPieceTeam(), false);
+    public Queen movePiece (Move move) {
+        return new Queen (move.getDestinationCoordinate (), move.getPiece ().getPieceTeam (), false);
     }
 
     @Override
-    public String toString() {
-        return PieceType.QUEEN.toString();
+    public String toString () {
+        return PieceType.QUEEN.toString ();
     }
 }

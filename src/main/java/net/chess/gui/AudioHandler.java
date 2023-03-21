@@ -1,20 +1,27 @@
 package main.java.net.chess.gui;
 
 import jaco.mp3.player.MP3Player;
+
 import java.io.File;
 
-/** Audio Handler using jaco mp3 library
+/**
+ * Audio Handler using "jaco mp3 library"
+ *
  * @author Nicolas Frey
  * @version 1.0
  */
 public class AudioHandler {
-    private final Sound[] sounds;
+    private static final Sound[] sounds;
 
-    public AudioHandler() {
+    static {
         sounds = new Sound[]{Sound.MOVE, Sound.CAPTURE, Sound.MATE};
     }
 
-    void playSound(final int soundType) {
+    private AudioHandler () {
+        throw new RuntimeException("Do not Initialize");
+    }
+
+    static void playSound (final int soundType) {
         if (soundType > 2 || soundType < 0) return;
         try {
             new MP3Player(new File("assets/pieces/sounds/" + sounds[soundType].getFile())).play();
@@ -31,11 +38,11 @@ public class AudioHandler {
 
         private final String file;
 
-        Sound(final String file) {
+        Sound (final String file) {
             this.file = file;
         }
 
-        public String getFile() {
+        public String getFile () {
             return this.file;
         }
     }

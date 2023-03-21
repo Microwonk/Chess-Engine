@@ -12,24 +12,26 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-/** AI minimax algorithm type
+/**
+ * AI minimax algorithm type
+ *
  * @author Nicolas Frey
  * @version 1.0
  */
-public class Minimax implements AI{
+public class Minimax implements AI {
 
     private final ExecutorService executorService;
     private int searchDepth;
 
-    public Minimax(final int searchDepth) {
+    public Minimax (final int searchDepth) {
         this.executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         this.searchDepth = searchDepth;
     }
 
-    public Move execute(final Board board) {
-        List<Move> legalMoves = new ArrayList<>(board.currentPlayer().getLegalMoves());
+    public Move execute (final Board board) {
+        List <Move> legalMoves = new ArrayList <>(board.currentPlayer().getLegalMoves());
 
-        AtomicReference<Move> bestMove = new AtomicReference<>(Move.MoveFactory.getNullMove());
+        AtomicReference <Move> bestMove = new AtomicReference <>(Move.MoveFactory.getNullMove());
         AtomicInteger highestSeenValue = new AtomicInteger(Integer.MIN_VALUE);
         AtomicInteger lowestSeenValue = new AtomicInteger(Integer.MAX_VALUE);
 
@@ -62,7 +64,7 @@ public class Minimax implements AI{
         return bestMove.get();
     }
 
-    public int minimax(Board board, int depth, boolean maximizingPlayer) {
+    public int minimax (Board board, int depth, boolean maximizingPlayer) {
         if (depth == 0 || board.isGameOver()) {
             return Evaluator.evaluate(board);
         }
@@ -86,7 +88,7 @@ public class Minimax implements AI{
     }
 
     @Override
-    public String toString() {
+    public String toString () {
         return "MiniMax";
     }
 }

@@ -12,7 +12,9 @@ import java.util.stream.Stream;
 
 import static main.java.net.chess.engine.pieces.Piece.PieceType;
 
-/** Evaluator for the Chess Board -> WIP VERRRY MUCH (so no Documentation yet)
+/**
+ * Evaluator for the Chess Board -> WIP VERRRY MUCH (so no Documentation yet)
+ *
  * @author Nicolas Frey
  * @version 1.0
  */
@@ -30,7 +32,7 @@ public class Evaluator {
     private static final int CENTRAL_PAWN_BONUS = 200;
     private static final int CENTRAL_PIECE_BONUS = 500;
 
-    public static int evaluate(Board board) {
+    public static int evaluate (Board board) {
         int score = evaluateMaterial(board) + evaluateMobility(board) + evaluateKingSafety(board) + evaluateCenterControl(board);
         //evaluatePawnStructure(board)
         if (isCheckmate(board)) {
@@ -39,13 +41,13 @@ public class Evaluator {
             } else {
                 score += WINNING_SCORE;
             }
-        } else if (GUI_Contents.get().isDrawByLackOfMaterial() || GUI_Contents.get().getGameBoard().isGameOverStaleMate()) {
+        } else if (GUI_Contents.get().isDrawByLackOfMaterial() || GUI_Contents.get().getGameBoard().isGameOverStaleMate() || GUI_Contents.get().isDrawByRepetition()) {
             score = DRAW_SCORE;
         }
         return score;
     }
 
-    private static int evaluateMaterial(Board board) {
+    private static int evaluateMaterial (Board board) {
         int whiteScore = 0;
         int blackScore = 0;
         for (Piece piece : Stream.concat(board.getBlackPieces().stream(), board.getWhitePieces().stream()).collect(Collectors.toList())) {
@@ -58,13 +60,13 @@ public class Evaluator {
         return whiteScore - blackScore;
     }
 
-    private static int evaluateMobility(final Board board) {
+    private static int evaluateMobility (final Board board) {
         int whiteMoves = board.currentPlayer().getLegalMoves().size();
         int blackMoves = board.currentPlayer().getOpponent().getLegalMoves().size();
         return MOBILITY_BONUS * (whiteMoves - blackMoves);
     }
 
-    private static int evaluateKingSafety(final Board board) {
+    private static int evaluateKingSafety (final Board board) {
         final int currentPlayerKingPosition = board.currentPlayer().getPlayerKing().getPiecePosition();
 
         // Check if the king is in check
@@ -84,7 +86,7 @@ public class Evaluator {
         return KING_SAFETY_BONUS;
     }
 
-    private static int evaluateCenterControl(final Board board) {
+    private static int evaluateCenterControl (final Board board) {
         int centerControlBonus = 0;
 
         // Count number of pieces on central squares
@@ -102,7 +104,7 @@ public class Evaluator {
         return centerControlBonus;
     }
 
-    private static int  evaluatePawnStructure(final Board board) {
+    private static int evaluatePawnStructure (final Board board) {
         int pawnStructEval = 0;
 
         pawnStructEval += evaluatePawnChain(board) + evaluateIsolatedPawn(board) + evaluateDoubledPawns(board);
@@ -111,13 +113,13 @@ public class Evaluator {
         return pawnStructEval;
     }
 
-    private static int evaluatePassedPawns(final Board board) {
+    private static int evaluatePassedPawns (final Board board) {
         int whitePassedPawns = 0;
         int blackPassedPawns = 0;
 
         for (final Piece pawn : board.currentPlayer().getActivePawns()) {
             if (isPassedPawn(pawn)) {
-                if (BoardUtilities.getAttackCount(board.currentPlayer().getOpponent().getLegalMoves() ,pawn.getPiecePosition()) == 0) {
+                if (BoardUtilities.getAttackCount(board.currentPlayer().getOpponent().getLegalMoves(), pawn.getPiecePosition()) == 0) {
                     // Passed pawn is not under attack
                     if (pawn.getPieceTeam().isWhite()) {
                         whitePassedPawns++;
@@ -130,12 +132,12 @@ public class Evaluator {
         return 0;
     }
 
-    private static boolean isPassedPawn(final Piece pawn) {
+    private static boolean isPassedPawn (final Piece pawn) {
         // TODO: implement a method to find out passed pawns
         return false;
     }
 
-    private static int evaluateIsolatedPawn(final Board board) {
+    private static int evaluateIsolatedPawn (final Board board) {
         int isolatedPawns = 0;
 
         for (final Piece pawn : board.currentPlayer().getActivePawns()) {
@@ -146,7 +148,7 @@ public class Evaluator {
         return ISOLATED_PAWN_PENALTY * isolatedPawns;
     }
 
-    private static boolean hasNeighboringPawns(final Piece pawn, final Board board) {
+    private static boolean hasNeighboringPawns (final Piece pawn, final Board board) {
         final int pawnFile = pawn.getPiecePosition() % 8;
 
         // Check for neighboring pawns on the same file
@@ -171,7 +173,7 @@ public class Evaluator {
         return false;
     }
 
-    private static int evaluateDoubledPawns(final Board board) {
+    private static int evaluateDoubledPawns (final Board board) {
         int doubledPawnCount = 0;
         final int[] fileCount = new int[8];
         for (final Piece pawn : board.currentPlayer().getActivePawns()) {
@@ -201,7 +203,7 @@ public class Evaluator {
         return doubledPawnCount * DOUBLED_PAWN_PENALTY;
     }
 
-    private static int evaluatePawnChain(final Board board) {
+    private static int evaluatePawnChain (final Board board) {
         int pawnChainCount = 0;
         int connectedPawnChainCount = 0;
         int advancedPawnChainCount = 0;
@@ -231,7 +233,7 @@ public class Evaluator {
         return pawnChainPoints + connectedPawnChainPoints + advancedPawnChainPoints;
     }
 
-    private static boolean isPawnChain(final Board board, final int pawnPosition, final Team pawnTeam) {
+    private static boolean isPawnChain (final Board board, final int pawnPosition, final Team pawnTeam) {
         final Piece pawn = board.getPiece(pawnPosition);
         if (pawn.getPieceType() != PieceType.PAWN || pawn.getPieceTeam() != pawnTeam) {
             return false;
@@ -252,7 +254,7 @@ public class Evaluator {
         return false;
     }
 
-    private static boolean isConnectedPawnChain(final Board board, final int pawnPosition, final Team pawnTeam) {
+    private static boolean isConnectedPawnChain (final Board board, final int pawnPosition, final Team pawnTeam) {
         if (!isPawnChain(board, pawnPosition, pawnTeam)) {
             return false;
         }
@@ -276,7 +278,7 @@ public class Evaluator {
         return false;
     }
 
-    private static boolean isCheckmate(final Board board) {
+    private static boolean isCheckmate (final Board board) {
         return board.currentPlayer().isInCheckmate() || board.currentPlayer().getOpponent().isInCheckmate();
     }
 }
