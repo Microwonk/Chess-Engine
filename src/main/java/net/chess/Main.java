@@ -1,7 +1,7 @@
-package main.java.net.chess;
+package net.chess;
 
 import com.formdev.flatlaf.FlatDarkLaf;
-import main.java.net.chess.gui.GUI_Contents;
+import net.chess.gui.GUI_Contents;
 
 import javax.swing.*;
 

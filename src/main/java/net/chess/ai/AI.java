@@ -1,7 +1,7 @@
-package main.java.net.chess.ai;
+package net.chess.ai;
 
-import main.java.net.chess.engine.board.Board;
-import main.java.net.chess.engine.board.Move;
+import net.chess.engine.board.Board;
+import net.chess.engine.board.Move;
 
 /**
  * WIP

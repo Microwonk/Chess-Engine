@@ -1,6 +1,7 @@
-package main.java.net.chess.gui;
+package net.chess.gui;
 
 import jaco.mp3.player.MP3Player;
+import net.chess.exception.ChessException;
 
 import java.io.File;
 
@@ -18,7 +19,7 @@ public class AudioHandler {
     }
 
     private AudioHandler () {
-        throw new RuntimeException("Do not Initialize");
+        throw new ChessException("AudioHandler may not be initialized");
     }
 
     static void playSound (final int soundType) {

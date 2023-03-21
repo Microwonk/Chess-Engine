@@ -1,7 +1,7 @@
-package main.java.net.chess.engine.player;
+package net.chess.engine.player;
 
-import main.java.net.chess.engine.board.Board;
-import main.java.net.chess.engine.board.Move;
+import net.chess.engine.board.Board;
+import net.chess.engine.board.Move;
 
 
 // from one move to another
@@ -28,5 +28,28 @@ public class MoveTransition {
 
     public Board getTransitionBoard () {
         return this.transitionBoard;
+    }
+
+    public enum MoveStatus {
+        DONE {
+            @Override
+            public boolean isDone () {
+                return true;
+            }
+        },
+        ILLEGAL_MOVE {
+            @Override
+            public boolean isDone () {
+                return false;
+            }
+        },
+        LEAVES_IN_CHECK {
+            @Override
+            public boolean isDone () {
+                return false;
+            }
+        };
+
+        public abstract boolean isDone ();
     }
 }

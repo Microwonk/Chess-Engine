@@ -1,9 +1,9 @@
-package main.java.net.chess.engine;
+package net.chess.engine;
 
-import main.java.net.chess.engine.board.BoardUtilities;
-import main.java.net.chess.engine.player.BlackPlayer;
-import main.java.net.chess.engine.player.Player;
-import main.java.net.chess.engine.player.WhitePlayer;
+import net.chess.engine.board.BoardUtilities;
+import net.chess.engine.player.BlackPlayer;
+import net.chess.engine.player.Player;
+import net.chess.engine.player.WhitePlayer;
 
 public enum Team {
     WHITE {

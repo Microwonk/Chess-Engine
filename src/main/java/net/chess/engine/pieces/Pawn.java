@@ -1,16 +1,16 @@
-package main.java.net.chess.engine.pieces;
+package net.chess.engine.pieces;
 
-import main.java.net.chess.engine.Team;
-import main.java.net.chess.engine.board.Board;
-import main.java.net.chess.engine.board.BoardUtilities;
-import main.java.net.chess.engine.board.Move;
+import net.chess.engine.Team;
+import net.chess.engine.board.Board;
+import net.chess.engine.board.BoardUtilities;
+import net.chess.engine.board.Move;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import static main.java.net.chess.engine.board.Move.*;
+import static net.chess.engine.board.Move.*;
 
 public class Pawn extends Piece {
 

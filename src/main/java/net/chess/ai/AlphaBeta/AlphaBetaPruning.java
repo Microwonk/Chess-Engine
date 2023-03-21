@@ -1,10 +1,10 @@
-package main.java.net.chess.ai.AlphaBeta;
+package net.chess.ai.AlphaBeta;
 
-import main.java.net.chess.ai.AI;
-import main.java.net.chess.ai.Evaluator;
-import main.java.net.chess.engine.board.Board;
-import main.java.net.chess.engine.board.Move;
-import main.java.net.chess.engine.player.MoveTransition;
+import net.chess.ai.AI;
+import net.chess.ai.Evaluator;
+import net.chess.engine.board.Board;
+import net.chess.engine.board.Move;
+import net.chess.engine.player.MoveTransition;
 
 import java.util.ArrayList;
 import java.util.List;

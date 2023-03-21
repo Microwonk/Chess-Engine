@@ -1,1 +1,1 @@
-rnbqk2r/pp1p1pbp/6p1/2pPp3/4n3/5NP1/PPP1PPBP/RNBQ1RK1 w kq d5 0 1
+rnbqk2r/pp1p1pbp/6p1/2pPp3/4n3/5NP1/PPP1PPBP/RNBQ1RK1 w kq c5 0 1

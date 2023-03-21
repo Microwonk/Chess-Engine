@@ -1,12 +1,14 @@
-package main.java.net.chess.engine.board;
+package net.chess.engine.board;
 
-import main.java.net.chess.engine.pieces.Pawn;
-import main.java.net.chess.engine.pieces.Piece;
-import main.java.net.chess.engine.pieces.Rook;
+import net.chess.engine.pieces.Pawn;
+import net.chess.engine.pieces.Piece;
+import net.chess.engine.pieces.Rook;
+import net.chess.exception.ChessException;
 
 import java.util.Objects;
 
-import static main.java.net.chess.engine.board.Board.Builder;
+import static net.chess.engine.board.Board.Builder;
+import static net.chess.engine.pieces.Piece.NullPiece;
 
 public abstract class Move {
 
@@ -21,7 +23,7 @@ public abstract class Move {
             , final Piece piece
             , final int destinationCoordinate) {
         this.board = board;
-        this.piece = piece;
+        this.piece = Objects.requireNonNull(piece);
         this.destinationCoordinate = destinationCoordinate;
         this.isFirstMove = true;
     }
@@ -30,7 +32,7 @@ public abstract class Move {
             , final int destinationCoordinate) {
         this.board = board;
         this.destinationCoordinate = destinationCoordinate;
-        this.piece = null;
+        this.piece = NullPiece.getNullPiece();
         this.isFirstMove = false;
     }
 
@@ -427,7 +429,7 @@ public abstract class Move {
 
         @Override
         public Board execute () {
-            throw new RuntimeException ("Should not be executable");
+            throw new ChessException ("Should not be executable");
         }
 
         // is an invalid coordinate, so that the null pointer exception for a null move is fixed
@@ -440,7 +442,7 @@ public abstract class Move {
 
     public static class MoveFactory {
         private MoveFactory () {
-            throw new RuntimeException ("Not instantiable");
+            throw new ChessException("MoveFactory may not be instantiated");
         }
 
         public static Move createMove (final Board board

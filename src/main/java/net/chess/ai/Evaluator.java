@@ -1,16 +1,16 @@
-package main.java.net.chess.ai;
+package net.chess.ai;
 
-import main.java.net.chess.engine.Team;
-import main.java.net.chess.engine.board.Board;
-import main.java.net.chess.engine.board.BoardUtilities;
-import main.java.net.chess.engine.pieces.Pawn;
-import main.java.net.chess.engine.pieces.Piece;
-import main.java.net.chess.gui.GUI_Contents;
+import net.chess.engine.Team;
+import net.chess.engine.board.Board;
+import net.chess.engine.board.BoardUtilities;
+import net.chess.engine.pieces.Pawn;
+import net.chess.engine.pieces.Piece;
+import net.chess.gui.GUI_Contents;
 
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static main.java.net.chess.engine.pieces.Piece.PieceType;
+import static net.chess.engine.pieces.Piece.PieceType;
 
 /**
  * Evaluator for the Chess Board -> WIP VERRRY MUCH (so no Documentation yet)

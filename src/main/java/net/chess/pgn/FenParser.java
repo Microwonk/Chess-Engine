@@ -1,15 +1,16 @@
-package main.java.net.chess.pgn;
+package net.chess.pgn;
 
-import main.java.net.chess.engine.Team;
-import main.java.net.chess.engine.board.Board;
-import main.java.net.chess.engine.board.Board.Builder;
-import main.java.net.chess.engine.board.BoardUtilities;
-import main.java.net.chess.engine.pieces.*;
+import net.chess.engine.Team;
+import net.chess.engine.board.Board;
+import net.chess.engine.board.Board.Builder;
+import net.chess.engine.board.BoardUtilities;
+import net.chess.engine.pieces.*;
+import net.chess.exception.ChessException;
 
 public class FenParser {
 
     private FenParser () {
-        throw new RuntimeException("NO");
+        throw new ChessException("Parser may not be initialized");
     }
 
     public static Board createGameFromFen (final String fenString) {
@@ -19,13 +20,13 @@ public class FenParser {
         for (int i = 0; i < splitter[0].length(); i++) {
             final String current = Character.toString(splitter[0].charAt(i));
             try {
-                // System.out.println(Integer.parseInt(Character.toString(splitter[0].charAt(i))));
                 emptyCount += Integer.parseInt(current) - 1;
             } catch(Exception e) {
                 final Piece p = createPieceFromFen(current.charAt(0), i, splitter, emptyCount);
                 if (p instanceof Pawn && !splitter[3].equals("-")) {
-                    if (p.getPiecePosition() == (BoardUtilities.MAPPING_TO_POS.get(splitter[3])))
+                    if (p.getPiecePosition() == (BoardUtilities.MAPPING_TO_POS.get(splitter[3]))) {
                         builder.setEnPassantPawn((Pawn) p);
+                    }
                 }
                 builder.setPiece(p);
             }
@@ -60,11 +61,8 @@ public class FenParser {
                     ||(BoardUtilities.FIRST_COLUMN[pos] && QSide)));
             case 'p' -> p = new Pawn(pos, Team.BLACK, BoardUtilities.SEVENTH_ROW[pos]);
             case 'P' -> p = new Pawn(pos, Team.WHITE, BoardUtilities.SECOND_ROW[pos]);
-            default -> p = null;
+            default -> throw new ChessException("not a valid FEN notation Character, FEN parsing failed");
         }
-        System.out.println(pos);
-        System.out.println(p);
-        System.out.println();
         return p;
     }
 

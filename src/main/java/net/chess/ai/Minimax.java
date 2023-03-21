@@ -1,8 +1,8 @@
-package main.java.net.chess.ai;
+package net.chess.ai;
 
-import main.java.net.chess.engine.board.Board;
-import main.java.net.chess.engine.board.Move;
-import main.java.net.chess.engine.player.MoveTransition;
+import net.chess.engine.board.Board;
+import net.chess.engine.board.Move;
+import net.chess.engine.player.MoveTransition;
 
 import java.util.ArrayList;
 import java.util.List;

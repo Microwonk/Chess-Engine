@@ -1,17 +1,18 @@
-package main.java.net.chess.gui;
+package net.chess.gui;
 
-import main.java.net.chess.ai.AI;
-import main.java.net.chess.ai.AlphaBeta.AlphaBetaPruning;
-import main.java.net.chess.engine.Team;
-import main.java.net.chess.engine.board.Board;
-import main.java.net.chess.engine.board.BoardUtilities;
-import main.java.net.chess.engine.board.Move;
-import main.java.net.chess.engine.board.Square;
-import main.java.net.chess.engine.pieces.*;
-import main.java.net.chess.engine.player.MoveStatus;
-import main.java.net.chess.engine.player.MoveTransition;
-import main.java.net.chess.engine.player.Player;
-import main.java.net.chess.pgn.FenParser;
+import net.chess.ai.AI;
+import net.chess.ai.AlphaBeta.AlphaBetaPruning;
+import net.chess.engine.Team;
+import net.chess.engine.board.Board;
+import net.chess.engine.board.BoardUtilities;
+import net.chess.engine.board.Move;
+import net.chess.engine.board.Square;
+import net.chess.engine.pieces.*;
+import net.chess.engine.player.MoveTransition.MoveStatus;
+import net.chess.engine.player.MoveTransition;
+import net.chess.engine.player.Player;
+import net.chess.exception.ChessException;
+import net.chess.pgn.FenParser;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -32,9 +33,9 @@ import java.util.stream.Collectors;
 
 import static java.util.concurrent.Flow.*;
 import static javax.swing.SwingUtilities.isLeftMouseButton;
-import static main.java.net.chess.engine.board.Move.PawnMove;
-import static main.java.net.chess.engine.board.Move.PawnPromotion;
-import static main.java.net.chess.engine.pieces.Piece.PieceType;
+import static net.chess.engine.board.Move.PawnMove;
+import static net.chess.engine.board.Move.PawnPromotion;
+import static net.chess.engine.pieces.Piece.PieceType;
 
 /**
  * Container for all the GUI Content Management and Connection of all the Components -> Singleton type
@@ -43,9 +44,6 @@ import static main.java.net.chess.engine.pieces.Piece.PieceType;
  * @version 1.0
  */
 public class GUI_Contents implements Publisher <Object> {
-
-
-    // TODO: shuffling moves results in draw
 
     private final JFrame frame;
     private final ChessBoard chessBoard;
@@ -182,7 +180,7 @@ public class GUI_Contents implements Publisher <Object> {
 
         final JMenuItem openFen = new JMenuItem("Load Fen");
         openFen.setFont(frame.getFont());
-        openFen.addActionListener(e -> loadGame("save/save.txt"));
+        openFen.addActionListener(e -> loadGame());
 
         final JMenuItem saveToFen = new JMenuItem("Save to Fen");
         saveToFen.setFont(frame.getFont());
@@ -204,10 +202,20 @@ public class GUI_Contents implements Publisher <Object> {
         return fileMenu;
     }
 
-    private void loadGame (final String toLoad) {
-        final File loadFile = new File(toLoad);
+    private void loadGame () {
+        final JFileChooser fileChooser = new JFileChooser();
+        final File selectedFile;
+        fileChooser.setCurrentDirectory(new File("save/save.txt"));
+        int result = fileChooser.showOpenDialog(this.frame);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            selectedFile = fileChooser.getSelectedFile();
+            System.out.println("Selected file: " + selectedFile.getAbsolutePath());
+        } else {
+            return;
+        }
+
         try {
-            final BufferedReader reader = new BufferedReader(new FileReader(loadFile));
+            final BufferedReader reader = new BufferedReader(new FileReader(selectedFile));
             this.board = FenParser.createGameFromFen(reader.readLine());
             reader.close();
             this.chessBoard.drawBoard(this.board);
@@ -914,7 +922,7 @@ public class GUI_Contents implements Publisher <Object> {
                     || BoardUtilities.EIGHTH_ROW[this.squareID]) {
                 return (this.squareID % 2 != 0 ? lightColour : darkColour);
             }
-            throw new RuntimeException("Square is off the bounds of the board.");
+            throw new ChessException("Square is off the bounds of the board.");
         }
 
         /**
