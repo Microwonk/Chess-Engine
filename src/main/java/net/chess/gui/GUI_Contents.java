@@ -16,10 +16,7 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.time.LocalDateTime;
@@ -84,21 +81,31 @@ public class GUI_Contents implements Publisher <Object> {
         this.logger = new Logger();
         this.currentMove = 0;
         this.movingEnabled = true;
+
         // TODO: make user choose own art
         this.frame.setLayout(new BorderLayout());
         this.frame.setFont(new Font("Minecraft", Font.BOLD, 13));
         this.chessBoard = new ChessBoard();
-        this.frame.add(this.chessBoard, BorderLayout.WEST);
+        this.frame.add(this.chessBoard, BorderLayout.CENTER);
         this.takenPieces = new TakenPieces();
         this.frame.add(this.takenPieces, BorderLayout.SOUTH);
-        this.frame.add(logger, BorderLayout.CENTER);
+        this.frame.add(logger, BorderLayout.EAST);
         this.frame.setJMenuBar(makeMenuBar());
         this.frame.addKeyListener(addHotKeys());
         this.frame.setSize(FRAME_DIMENSION);
-        //this.frame.setMinimumSize(new Dimension(640, 640));
+        this.frame.setMinimumSize(new Dimension(640, 640));
         this.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.frame.setResizable(true);
         this.frame.setLocationRelativeTo(null);
+        this.frame.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                int width = frame.getWidth() - chessBoard.getPreferredSize().width + (chessBoard.getPreferredSize().height -chessBoard.getHeight());
+                int height = frame.getHeight();
+                logger.setPreferredSize(new Dimension(width, height));
+                logger.revalidate();
+            }
+        });
         this.frame.setVisible(true);
         logger.printLog("Hallo", "Tschüss", "Was geht");
     }
@@ -656,8 +663,7 @@ public class GUI_Contents implements Publisher <Object> {
                 this.add(square);
             }
             setPreferredSize(CHESS_BOARD_DIMENSION);
-            setMinimumSize(CHESS_BOARD_DIMENSION);
-            setMaximumSize(CHESS_BOARD_DIMENSION);
+            setMinimumSize(new Dimension(400, 400));
             validate();
         }
 
