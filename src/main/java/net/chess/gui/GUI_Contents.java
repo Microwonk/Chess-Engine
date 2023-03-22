@@ -2,7 +2,6 @@ package net.chess.gui;
 
 import net.chess.ai.AI;
 import net.chess.ai.AlphaBeta.AlphaBetaPruning;
-import net.chess.engine.Team;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.BoardUtilities;
 import net.chess.engine.board.Move;
@@ -10,12 +9,12 @@ import net.chess.engine.board.Square;
 import net.chess.engine.pieces.*;
 import net.chess.engine.player.MoveTransition.MoveStatus;
 import net.chess.engine.player.MoveTransition;
-import net.chess.engine.player.Player;
 import net.chess.exception.ChessException;
-import net.chess.pgn.FenParser;
+import net.chess.parsing.FenParser;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -36,6 +35,7 @@ import static javax.swing.SwingUtilities.isLeftMouseButton;
 import static net.chess.engine.board.Move.PawnMove;
 import static net.chess.engine.board.Move.PawnPromotion;
 import static net.chess.engine.pieces.Piece.PieceType;
+import static net.chess.gui.PropertyVars.*;
 
 /**
  * Container for all the GUI Content Management and Connection of all the Components -> Singleton type
@@ -48,12 +48,13 @@ public class GUI_Contents implements Publisher <Object> {
     private final JFrame frame;
     private final ChessBoard chessBoard;
     private final TakenPieces takenPieces;
+    private final Logger logger;
     private Board board;
     private final MoveLog moveLog;
     private final GameDialog gameDialog;
-    private final static Dimension FRAME_DIMENSION = new Dimension(640, 720);
+    private final static Dimension FRAME_DIMENSION = new Dimension(800, 720);
     private final Dimension CHESS_BOARD_DIMENSION = new Dimension(400, 400);
-    private final Dimension SQUARE_DIMENSION = new Dimension(10, 10);
+    private final Dimension SQUARE_DIMENSION = new Dimension(50, 50);
 
     private Move computerMove; // not needed until later
     private final SubmissionPublisher <Object> publisher;
@@ -66,12 +67,6 @@ public class GUI_Contents implements Publisher <Object> {
     private BoardDirection boardDirection;
     private int currentMove;
     private boolean movingEnabled;
-    private boolean highlightLegalMovesActive;
-
-    public final static String path = "assets/pieces/pixel_art/";
-    public final static String misc = "assets/misc/";
-    protected final static Color lightColour = new Color(196, 189, 175);
-    protected final static Color darkColour = new Color(155, 132, 75);
 
 
     // instantiating the Singleton
@@ -81,29 +76,31 @@ public class GUI_Contents implements Publisher <Object> {
         this.frame = new JFrame("Chess by Nicolas Frey");
         this.board = Board.createStandardBoard();
         this.boardDirection = BoardDirection.NORMAL;
-        this.highlightLegalMovesActive = true;
         this.positionLog = new ArrayList <>();
         this.moveLog = new MoveLog();
         this.publisher = new SubmissionPublisher <>();
         this.addSubscriber(new GameSubscriber());
         this.gameDialog = new GameDialog(this.frame);
+        this.logger = new Logger();
         this.currentMove = 0;
         this.movingEnabled = true;
         // TODO: make user choose own art
         this.frame.setLayout(new BorderLayout());
         this.frame.setFont(new Font("Minecraft", Font.BOLD, 13));
         this.chessBoard = new ChessBoard();
-        this.frame.add(this.chessBoard, BorderLayout.CENTER);
+        this.frame.add(this.chessBoard, BorderLayout.WEST);
         this.takenPieces = new TakenPieces();
         this.frame.add(this.takenPieces, BorderLayout.SOUTH);
+        this.frame.add(logger, BorderLayout.CENTER);
         this.frame.setJMenuBar(makeMenuBar());
         this.frame.addKeyListener(addHotKeys());
         this.frame.setSize(FRAME_DIMENSION);
-        this.frame.setMinimumSize(new Dimension(720, 820));
+        //this.frame.setMinimumSize(new Dimension(640, 640));
         this.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.frame.setResizable(true);
         this.frame.setLocationRelativeTo(null);
         this.frame.setVisible(true);
+        logger.printLog("Hallo", "Tschüss", "Was geht");
     }
 
     public void addSubscriber (Subscriber <? super Object> subscriber) {
@@ -168,7 +165,16 @@ public class GUI_Contents implements Publisher <Object> {
         menuBar.add(createFileMenu());
         menuBar.add(createSettingsMenu());
         menuBar.add(createOptionsMenu());
+        menuBar.add(dev());
         return menuBar;
+    }
+
+    private JMenu dev () {
+        final JMenu dev = new JMenu("Dev");
+        final JMenuItem test = new JMenuItem("Test");
+        test.addActionListener(e -> logger.printLog("Test", "Test", "Test"));
+        dev.add(test);
+        return dev;
     }
 
     /**
@@ -184,7 +190,7 @@ public class GUI_Contents implements Publisher <Object> {
 
         final JMenuItem saveToFen = new JMenuItem("Save to Fen");
         saveToFen.setFont(frame.getFont());
-        saveToFen.addActionListener(e -> saveGame(FenParser.parseFen(this.board), "save/", ".txt"));
+        saveToFen.addActionListener(e -> saveGame(FenParser.parseFen(this.board)));
 
         final JMenuItem exitFrame = new JMenuItem("Exit");
         exitFrame.setFont(frame.getFont());
@@ -202,10 +208,14 @@ public class GUI_Contents implements Publisher <Object> {
         return fileMenu;
     }
 
+    /**
+     * load from .fen and later from .pgn or db
+     */
     private void loadGame () {
         final JFileChooser fileChooser = new JFileChooser();
         final File selectedFile;
-        fileChooser.setCurrentDirectory(new File("save/save.txt"));
+        fileChooser.setCurrentDirectory(new File(savePath + "."));
+        fileChooser.setFileFilter(new FileNameExtensionFilter("FEN-file", "*.fen"));
         int result = fileChooser.showOpenDialog(this.frame);
         if (result == JFileChooser.APPROVE_OPTION) {
             selectedFile = fileChooser.getSelectedFile();
@@ -217,7 +227,10 @@ public class GUI_Contents implements Publisher <Object> {
         try {
             final BufferedReader reader = new BufferedReader(new FileReader(selectedFile));
             this.board = FenParser.createGameFromFen(reader.readLine());
+            properties.setProperty("savePath", selectedFile.getAbsolutePath());
+            properties.store(new FileWriter("config/config.properties"), null);
             reader.close();
+
             this.chessBoard.drawBoard(this.board);
         } catch (Exception e) {
             e.printStackTrace();
@@ -225,17 +238,30 @@ public class GUI_Contents implements Publisher <Object> {
     }
 
     /**
-     * @param toSave   Fen String or PGN Format Moves
-     * @param savePath path that will be saved to -> will be obsolete once database is established
-     * @param fileType .txt or .pgn depending on FEN or PGN -> will be obsolete once database is established
+     * @param toSave Fen String or PGN Format Moves
      */
-    private void saveGame (final String toSave, final String savePath, final String fileType) {
-        final File saveFile = new File(savePath +
+    private void saveGame (final String toSave) {
+        final JFileChooser fileChooser = new JFileChooser();
+        File selectedFile;
+        fileChooser.setCurrentDirectory(new File(savePath));
+        fileChooser.setSelectedFile(new File(savePath +
                 DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss")
-                        .format(LocalDateTime.now()) + fileType);
+                        .format(LocalDateTime.now()) + ".fen"));
+        fileChooser.addChoosableFileFilter(new FileNameExtensionFilter
+                ("FEN-file, PGN-file", "*.fen", "*.pgn"));
+
+        int result = fileChooser.showSaveDialog(this.frame);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            selectedFile = fileChooser.getSelectedFile();
+            System.out.println("Selected file: " + selectedFile.getPath());
+        } else {
+            return;
+        }
         try {
-            final BufferedWriter bw = new BufferedWriter(new FileWriter(saveFile));
+            final BufferedWriter bw = new BufferedWriter(new FileWriter(selectedFile));
             bw.write(toSave);
+            properties.setProperty("savePath", selectedFile.getPath());
+            properties.store(new FileWriter("config/config.properties"), null);
             bw.close();
         } catch (Exception e) {
             e.printStackTrace();
@@ -258,13 +284,51 @@ public class GUI_Contents implements Publisher <Object> {
         settingsMenu.addSeparator();
 
         final JCheckBoxMenuItem highlightingLegalMovesToggle = new JCheckBoxMenuItem("Highlight Moves");
-        highlightingLegalMovesToggle.setSelected(true);
+        highlightingLegalMovesToggle.setSelected(highlightLegalMovesActive);
         highlightingLegalMovesToggle.setFont(frame.getFont());
         highlightingLegalMovesToggle.addActionListener(e -> {
             highlightLegalMovesActive = highlightingLegalMovesToggle.isSelected();
+            properties.setProperty("highlightLegalMovesActive", highlightLegalMovesActive ? "true" : "false");
+            //TODO: look at this, this is how you save .properties
+            try {
+                properties.store(new FileWriter("config/config.properties"), null);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
             chessBoard.drawBoard(board);
         });
+
+        final JCheckBoxMenuItem signifyChecksToggle = new JCheckBoxMenuItem("Signify Checks");
+        signifyChecksToggle.setSelected(signifyChecksActive);
+        signifyChecksToggle.setFont(frame.getFont());
+        signifyChecksToggle.addActionListener(e -> {
+            signifyChecksActive = signifyChecksToggle.isSelected();
+            properties.setProperty("signifyChecksActive", signifyChecksActive ? "true" : "false");
+            try {
+                properties.store(new FileWriter("config/config.properties"), null);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+            chessBoard.drawBoard(board);
+        });
+
+        final JCheckBoxMenuItem soundToggle = new JCheckBoxMenuItem("Toggle Sound");
+        soundToggle.setSelected(soundOn);
+        soundToggle.setFont(frame.getFont());
+        soundToggle.addActionListener(e -> {
+            soundOn = soundToggle.isSelected();
+            properties.setProperty("soundOn", soundOn ? "true" : "false");
+            try {
+                properties.store(new FileWriter("config/config.properties"), null);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+            chessBoard.drawBoard(board);
+        });
+
         settingsMenu.add(highlightingLegalMovesToggle);
+        settingsMenu.add(signifyChecksToggle);
+        settingsMenu.add(soundToggle);
         settingsMenu.setFont(frame.getFont());
         return settingsMenu;
     }
@@ -299,9 +363,6 @@ public class GUI_Contents implements Publisher <Object> {
     public void subscribe (Subscriber <? super Object> subscriber) {
 
     }
-
-    // TODO: Observer is deprecated -> look into PropertyChangeListener ::
-    //  https://stackoverflow.com/questions/46380073/observer-is-deprecated-in-java-9-what-should-we-use-instead-of-it
 
     /**
      * Game Subscriber
@@ -363,7 +424,6 @@ public class GUI_Contents implements Publisher <Object> {
         // what should be done in the background thread
         @Override
         protected Move doInBackground () {
-            // TODO: implement difference between random and actual algorithm
             final AI alphaBeta = new AlphaBetaPruning(GUI_Contents.get().gameDialog.getSearchDepth());
             final Move move = alphaBeta.execute(GUI_Contents.get().getGameBoard());
             if (move.isAttack()) {
@@ -551,7 +611,7 @@ public class GUI_Contents implements Publisher <Object> {
     public enum BoardDirection {
         NORMAL {
             @Override
-            List <SquareGUI> traverse (List <SquareGUI> squares) {
+            List <GUI_Square> traverse (List <GUI_Square> squares) {
                 return squares;
             }
 
@@ -562,8 +622,8 @@ public class GUI_Contents implements Publisher <Object> {
         },
         FLIPPED {
             @Override
-            List <SquareGUI> traverse (List <SquareGUI> squares) {
-                final List <SquareGUI> viewOnly = new ArrayList <>(squares);
+            List <GUI_Square> traverse (List <GUI_Square> squares) {
+                final List <GUI_Square> viewOnly = new ArrayList <>(squares);
                 Collections.reverse(viewOnly);
                 return Collections.unmodifiableList(viewOnly);
             }
@@ -574,7 +634,7 @@ public class GUI_Contents implements Publisher <Object> {
             }
         };
 
-        abstract List <SquareGUI> traverse (final List <SquareGUI> squares);
+        abstract List <GUI_Square> traverse (final List <GUI_Square> squares);
 
         abstract BoardDirection opposite ();
     }
@@ -584,18 +644,20 @@ public class GUI_Contents implements Publisher <Object> {
      */
     private class ChessBoard extends JPanel {
 
-        final List <SquareGUI> boardSquares;
+        final List <GUI_Square> boardSquares;
 
         ChessBoard () {
             super(new GridLayout(8, 8));
             this.boardSquares = new ArrayList <>();
 
             for (int i = 0; i < BoardUtilities.NUM_SQUARES; i++) {
-                final SquareGUI square = new SquareGUI(i);
+                final GUI_Square square = new GUI_Square(i);
                 this.boardSquares.add(square);
                 this.add(square);
             }
             setPreferredSize(CHESS_BOARD_DIMENSION);
+            setMinimumSize(CHESS_BOARD_DIMENSION);
+            setMaximumSize(CHESS_BOARD_DIMENSION);
             validate();
         }
 
@@ -604,7 +666,7 @@ public class GUI_Contents implements Publisher <Object> {
          */
         public void drawBoard (final Board board) {
             removeAll();
-            for (final SquareGUI square : boardDirection.traverse(boardSquares)) {
+            for (final GUI_Square square : boardDirection.traverse(boardSquares)) {
                 square.drawSquare(board);
                 add(square);
             }
@@ -652,11 +714,11 @@ public class GUI_Contents implements Publisher <Object> {
     /**
      * A single Square on the Board
      */
-    private class SquareGUI extends JPanel {
+    private class GUI_Square extends JPanel {
 
         private final int squareID;
 
-        SquareGUI (final int squareID) {
+        GUI_Square (final int squareID) {
             super(new GridBagLayout());
             this.squareID = squareID;
             this.setPreferredSize(SQUARE_DIMENSION);
@@ -724,15 +786,15 @@ public class GUI_Contents implements Publisher <Object> {
                                     promotionPiece = new Queen(movedPiece.getPiecePosition()
                                             , movedPiece.getPieceTeam()
                                             , false);
-                                } else if (pD.selectedPieceType == PieceType.ROOK) {
+                                } else if (pD.getSelectedPieceType() == PieceType.ROOK) {
                                     promotionPiece = new Rook(movedPiece.getPiecePosition()
                                             , movedPiece.getPieceTeam()
                                             , false);
-                                } else if (pD.selectedPieceType == PieceType.BISHOP) {
+                                } else if (pD.getSelectedPieceType() == PieceType.BISHOP) {
                                     promotionPiece = new Bishop(movedPiece.getPiecePosition()
                                             , movedPiece.getPieceTeam()
                                             , false);
-                                } else if (pD.selectedPieceType == PieceType.KNIGHT) {
+                                } else if (pD.getSelectedPieceType() == PieceType.KNIGHT) {
                                     promotionPiece = new Knight(movedPiece.getPiecePosition()
                                             , movedPiece.getPieceTeam()
                                             , false);
@@ -785,20 +847,13 @@ public class GUI_Contents implements Publisher <Object> {
                 }
 
                 @Override
-                public void mousePressed (final MouseEvent e) {
-                }
-
+                public void mousePressed (final MouseEvent e) {}
                 @Override
-                public void mouseReleased (final MouseEvent e) {
-                }
-
+                public void mouseReleased (final MouseEvent e) {}
                 @Override
-                public void mouseEntered (final MouseEvent e) {
-                }
-
+                public void mouseEntered (final MouseEvent e) {}
                 @Override
-                public void mouseExited (final MouseEvent e) {
-                }
+                public void mouseExited (final MouseEvent e) {}
             };
         }
 
@@ -810,7 +865,7 @@ public class GUI_Contents implements Publisher <Object> {
             if (board.getSquare(this.squareID).isOccupied()) {
                 try {
                     final BufferedImage image = ImageIO.read(new File(
-                            path + board.getSquare(this.squareID)
+                            artPath + board.getSquare(this.squareID)
                                     .getPiece().getPieceTeam().toString()
                                     .charAt(0) + board.getSquare(this.squareID)
                                     .getPiece().toString() + ".png")
@@ -830,7 +885,7 @@ public class GUI_Contents implements Publisher <Object> {
                 for (final Move move : pieceLegalMoves(board)) {
                     if (move.getDestinationCoordinate() == squareID) {
                         try {
-                            add(new JLabel(new ImageIcon(ImageIO.read(new File(misc + "highlighting.png"))
+                            add(new JLabel(new ImageIcon(ImageIO.read(new File(miscPath + "highlighting.png"))
                                     .getScaledInstance(25, 25, 0))));
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -868,6 +923,8 @@ public class GUI_Contents implements Publisher <Object> {
          * @param board passed in Board to check for mate, checks and stalemate
          */
         private void signifyCheck (final Board board) {
+            if (!signifyChecksActive) return;
+
             Color red = new Color(152, 40, 0);
             if (moveLog.size() < 1) {
                 return;
@@ -935,235 +992,6 @@ public class GUI_Contents implements Publisher <Object> {
             signifyCheck(board);
             validate();
             repaint();
-        }
-    }
-
-    /**
-     * JPanel to represent the Taken Pieces in one Game
-     */
-    private static class TakenPieces extends JPanel {
-
-        private final JPanel WEST;
-        private final JPanel EAST;
-        private static final Dimension DIMENSION = new Dimension(600, 70);
-
-        public TakenPieces () {
-            super(new BorderLayout());
-            JPanel bottom = new JPanel();
-            bottom.setPreferredSize(new Dimension(600, 5));
-            this.setPreferredSize(DIMENSION);
-            this.WEST = new JPanel(new GridLayout(2, 8)); // 8 * 2 -> 16 pieces
-            this.EAST = new JPanel(new GridLayout(2, 8)); // 8 * 2 -> 16 pieces
-
-            this.add(this.WEST, BorderLayout.WEST);
-            this.add(this.EAST, BorderLayout.EAST);
-            this.add(bottom, BorderLayout.SOUTH);
-        }
-
-        /**
-         * @param moveLog passed in to look for Attacking Moves
-         *                , which have an attacked Piece -> so it will be a "Taken Piece"
-         */
-        public void refresh (final MoveLog moveLog) {
-            this.EAST.removeAll();
-            this.WEST.removeAll();
-
-            final List <Piece> whiteTakenPieces = new ArrayList <>();
-            final List <Piece> blackTakenPieces = new ArrayList <>();
-
-            moveLog.getMoves().forEach(move -> {
-                if (move.isAttack()) {
-                    final Piece takenPiece = move.getAttackedPiece();
-                    if (takenPiece.getPieceTeam().isWhite()) {
-                        whiteTakenPieces.add(takenPiece);
-                    } else {
-                        blackTakenPieces.add(takenPiece);
-                    }
-                }
-            });
-
-            whiteTakenPieces.sort(Comparator.comparingInt(Piece::getPieceValue));
-            blackTakenPieces.sort(Comparator.comparingInt(Piece::getPieceValue));
-
-            for (final Piece takenPiece : whiteTakenPieces) {
-                try {
-                    this.EAST.add(new JLabel(new ImageIcon(ImageIO.read(new File(path
-                            + takenPiece.getPieceTeam().toString().charAt(0)
-                            + takenPiece + ".png")))));
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            for (final Piece takenPiece : blackTakenPieces) {
-                try {
-                    this.WEST.add(new JLabel(new ImageIcon(ImageIO.read(new File(path
-                            + takenPiece.getPieceTeam().toString().charAt(0)
-                            + takenPiece + ".png")))));
-
-                } catch (final IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            validate();
-            repaint();
-        }
-    }
-
-    /**
-     * Popup dialog for Promoting a Promotion Pawn
-     */
-    private static class PromotionDialog extends JDialog {
-
-        private PieceType selectedPieceType;
-
-        public PromotionDialog (JFrame parent, Team pieceColor) {
-            super(parent, "Promotion", true);
-            final String team = pieceColor.toString().substring(0, 1);
-
-            // Create buttons for each promotion piece
-            JButton queenButton = new JButton(new ImageIcon(path + team + "Q.png"));
-            JButton rookButton = new JButton(new ImageIcon(path + team + "R.png"));
-            JButton bishopButton = new JButton(new ImageIcon(path + team + "B.png"));
-            JButton knightButton = new JButton(new ImageIcon(path + team + "N.png"));
-
-            queenButton.setFocusable(false);
-            rookButton.setFocusable(false);
-            bishopButton.setFocusable(false);
-            knightButton.setFocusable(false);
-
-            // Add action listeners for each button
-            queenButton.addActionListener(e -> {
-                selectedPieceType = PieceType.QUEEN;
-                dispose();
-            });
-            rookButton.addActionListener(e -> {
-                selectedPieceType = PieceType.ROOK;
-                dispose();
-            });
-            bishopButton.addActionListener(e -> {
-                selectedPieceType = PieceType.BISHOP;
-                dispose();
-            });
-            knightButton.addActionListener(e -> {
-                selectedPieceType = PieceType.KNIGHT;
-                dispose();
-            });
-            // Create a panel to hold the buttons
-            JPanel panel = new JPanel();
-            panel.add(queenButton);
-            panel.add(rookButton);
-            panel.add(bishopButton);
-            panel.add(knightButton);
-            this.add(panel);
-            // Set size and visibility
-            this.pack();
-            this.setLocation(new Point(parent.getMousePosition(true).x + 385, parent.getMousePosition(true).y));
-            this.setVisible(true);
-        }
-
-        public PieceType getSelectedPieceType () {
-            return this.selectedPieceType;
-        }
-    }
-
-    /**
-     * Popup dialog for Computer and Human settings
-     */
-    private static class GameDialog extends JDialog {
-
-        private GUI_Contents.PlayerType whitePlayerType;
-        private GUI_Contents.PlayerType blackPlayerType;
-        private final JSpinner searchDepthSpinner;
-
-        private static final String HUMAN_TEXT = "Human";
-        private static final String COMPUTER_TEXT = "Computer";
-
-        public GameDialog (final JFrame parent) {
-            super(parent, "Game", true);
-            final JPanel myPanel = new JPanel(new GridLayout(0, 1));
-            final JRadioButton whiteHumanButton = new JRadioButton(HUMAN_TEXT);
-            final JRadioButton whiteComputerButton = new JRadioButton(COMPUTER_TEXT);
-            final JRadioButton blackHumanButton = new JRadioButton(HUMAN_TEXT);
-            final JRadioButton blackComputerButton = new JRadioButton(COMPUTER_TEXT);
-
-            whiteHumanButton.setActionCommand(HUMAN_TEXT);
-
-            final ButtonGroup whiteGroup = new ButtonGroup();
-            whiteGroup.add(whiteHumanButton);
-            whiteGroup.add(whiteComputerButton);
-            whiteHumanButton.setSelected(true);
-
-            final ButtonGroup blackGroup = new ButtonGroup();
-            blackGroup.add(blackHumanButton);
-            blackGroup.add(blackComputerButton);
-            blackHumanButton.setSelected(true);
-
-            getContentPane().add(myPanel);
-
-            myPanel.add(new JLabel("White"));
-            myPanel.add(whiteHumanButton);
-            myPanel.add(whiteComputerButton);
-            myPanel.add(new JLabel("Black"));
-            myPanel.add(blackHumanButton);
-            myPanel.add(blackComputerButton);
-            myPanel.add(new JLabel("Search"));
-
-            this.searchDepthSpinner = addLabeledSpinner(myPanel, new SpinnerNumberModel(6, 0, Integer.MAX_VALUE, 1));
-
-            final JButton cancelButton = new JButton("Cancel");
-            final JButton okButton = new JButton("OK");
-
-            okButton.addActionListener(e -> {
-                whitePlayerType = whiteComputerButton.isSelected() ? GUI_Contents.PlayerType.COMPUTER : GUI_Contents.PlayerType.HUMAN;
-                blackPlayerType = blackComputerButton.isSelected() ? GUI_Contents.PlayerType.COMPUTER : GUI_Contents.PlayerType.HUMAN;
-                GameDialog.this.setVisible(false);
-            });
-            cancelButton.addActionListener(e -> {
-                System.out.println("Cancel");
-                GameDialog.this.setVisible(false);
-            });
-
-            myPanel.add(cancelButton);
-            myPanel.add(okButton);
-
-            pack();
-            setVisible(false);
-        }
-
-        void promptUser (JFrame parent) {
-            setLocationRelativeTo(parent);
-            setVisible(true);
-            repaint();
-        }
-
-        boolean isAIPlayer (final Player player) {
-            if (player.getTeam() == Team.WHITE) {
-                return getWhitePlayerType() == GUI_Contents.PlayerType.COMPUTER;
-            }
-            return getBlackPlayerType() == GUI_Contents.PlayerType.COMPUTER;
-        }
-
-        GUI_Contents.PlayerType getWhitePlayerType () {
-            return this.whitePlayerType;
-        }
-
-        GUI_Contents.PlayerType getBlackPlayerType () {
-            return this.blackPlayerType;
-        }
-
-        private static JSpinner addLabeledSpinner (final Container c, final SpinnerModel model) {
-            final JLabel l = new JLabel("Search Depth");
-            c.add(l);
-            final JSpinner spinner = new JSpinner(model);
-            l.setLabelFor(spinner);
-            c.add(spinner);
-            return spinner;
-        }
-
-        int getSearchDepth () {
-            return (Integer) this.searchDepthSpinner.getValue();
         }
     }
 }

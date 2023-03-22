@@ -1,4 +1,4 @@
-package net.chess.pgn;
+package net.chess.parsing;
 
 import net.chess.engine.Team;
 import net.chess.engine.board.Board;

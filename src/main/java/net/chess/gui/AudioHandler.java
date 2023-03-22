@@ -5,6 +5,8 @@ import net.chess.exception.ChessException;
 
 import java.io.File;
 
+import static net.chess.gui.PropertyVars.soundOn;
+
 /**
  * Audio Handler using "jaco mp3 library"
  *
@@ -23,6 +25,8 @@ public class AudioHandler {
     }
 
     static void playSound (final int soundType) {
+        if (soundOn) return;
+
         if (soundType > 2 || soundType < 0) return;
         try {
             new MP3Player(new File("assets/pieces/sounds/" + sounds[soundType].getFile())).play();

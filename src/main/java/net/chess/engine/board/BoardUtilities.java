@@ -5,7 +5,6 @@ import net.chess.exception.ChessException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Utilities for Comfort
