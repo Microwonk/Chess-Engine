@@ -33,7 +33,10 @@ public class Evaluator {
     private static final int CENTRAL_PIECE_BONUS = 500;
 
     public static int evaluate (Board board) {
-        int score = evaluateMaterial(board) + evaluateMobility(board) + evaluateKingSafety(board) + evaluateCenterControl(board);
+        int score = evaluateMaterial(board)
+                + evaluateMobility(board)
+                + evaluateKingSafety(board)
+                + evaluateCenterControl(board);
         //evaluatePawnStructure(board)
         if (isCheckmate(board)) {
             if (board.currentPlayer().isInCheck()) {
@@ -41,8 +44,10 @@ public class Evaluator {
             } else {
                 score += WINNING_SCORE;
             }
-        } else if (GUI_Contents.get().isDrawByLackOfMaterial() || GUI_Contents.get().getGameBoard().isGameOverStaleMate() || GUI_Contents.get().isDrawByRepetition()) {
-            score = DRAW_SCORE;
+        } else if (GUI_Contents.get().isDrawByLackOfMaterial() || GUI_Contents.get().isDrawByRepetition()) {
+            if (GUI_Contents.get().getGameBoard().isGameOverStaleMate()) {
+                score = DRAW_SCORE;
+            }
         }
         return score;
     }
@@ -50,7 +55,7 @@ public class Evaluator {
     private static int evaluateMaterial (Board board) {
         int whiteScore = 0;
         int blackScore = 0;
-        for (Piece piece : Stream.concat(board.getBlackPieces().stream(), board.getWhitePieces().stream()).collect(Collectors.toList())) {
+        for (Piece piece : Stream.concat(board.getBlackPieces().stream(), board.getWhitePieces().stream()).toList()) {
             if (piece.getPieceTeam() == Team.WHITE) {
                 whiteScore += piece.getPieceValue();
             } else {

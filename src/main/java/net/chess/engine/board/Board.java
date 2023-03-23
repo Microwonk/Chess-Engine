@@ -5,6 +5,7 @@ import net.chess.engine.pieces.*;
 import net.chess.engine.player.BlackPlayer;
 import net.chess.engine.player.Player;
 import net.chess.engine.player.WhitePlayer;
+import net.chess.gui.GUI_Contents;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -190,7 +191,7 @@ public class Board {
     }
 
     public boolean isGameOver () {
-        return isGameOverCheckMate() || isGameOverCheckMate();
+        return isGameOverCheckMate() || isGameOverStaleMate() || GUI_Contents.get().isDrawByLackOfMaterial() || GUI_Contents.get().isDrawByRepetition();
     }
 
     public Piece getPiece (final int destinationCoordinate) {

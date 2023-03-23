@@ -2,6 +2,8 @@ package net.chess.gui;
 
 import net.chess.ai.AI;
 import net.chess.ai.AlphaBeta.AlphaBetaPruning;
+import net.chess.ai.Minimax;
+import net.chess.ai.Rand;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.BoardUtilities;
 import net.chess.engine.board.Move;
@@ -400,7 +402,6 @@ public class GUI_Contents implements Publisher <Object> {
         private void handleGameEvent (Object ignored) {
             if (GUI_Contents.get().getGame().isAIPlayer(GUI_Contents.get().getGameBoard().currentPlayer())
                     && !GUI_Contents.get().getGameBoard().currentPlayer().isInCheckmate()
-                    && !GUI_Contents.get().getGameBoard().currentPlayer().isInStalemate()
                     && !GUI_Contents.get().isDrawByLackOfMaterial()
                     && !GUI_Contents.get().isDrawByRepetition()) {
                 // execute the AI
@@ -438,6 +439,7 @@ public class GUI_Contents implements Publisher <Object> {
         // what should be done in the background thread
         @Override
         protected Move doInBackground () {
+            //final AI miniMax = new Minimax(GUI_Contents.get().gameDialog.getSearchDepth());
             final AI alphaBeta = new AlphaBetaPruning(GUI_Contents.get().gameDialog.getSearchDepth());
             final Move move = alphaBeta.execute(GUI_Contents.get().getGameBoard());
             if (move.isAttack()) {
@@ -459,8 +461,8 @@ public class GUI_Contents implements Publisher <Object> {
                 GUI_Contents.get().getTakenPieces().refresh(GUI_Contents.get().getMoveLog());
                 GUI_Contents.get().getChessBoard().drawBoard(GUI_Contents.get().getGameBoard());
                 GUI_Contents.get().moveMadeUpdate(PlayerType.COMPUTER);
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
+            } catch (Exception ignored) {
+                GUI_Contents.get().logger.printLog("Execution failed...");
             }
             super.done();
         }
