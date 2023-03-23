@@ -42,6 +42,7 @@ import static net.chess.gui.PropertyVars.*;
  */
 public class GUI_Contents implements Publisher <Object> {
 
+    // TODO: make the takenpieces panel merge with the chesspanel, so that it adjusts even better
     private final JFrame frame;
     private final ChessBoard chessBoard;
     private final TakenPieces takenPieces;
@@ -49,7 +50,7 @@ public class GUI_Contents implements Publisher <Object> {
     private Board board;
     private final MoveLog moveLog;
     private final GameDialog gameDialog;
-    private final static Dimension FRAME_DIMENSION = new Dimension(800, 720);
+    private final static Dimension FRAME_DIMENSION = new Dimension(800, 640);
     private final Dimension CHESS_BOARD_DIMENSION = new Dimension(400, 400);
     private final Dimension SQUARE_DIMENSION = new Dimension(50, 50);
 
@@ -71,6 +72,7 @@ public class GUI_Contents implements Publisher <Object> {
 
     private GUI_Contents () {
         this.frame = new JFrame("Chess by Nicolas Frey");
+        this.frame.setMinimumSize(FRAME_DIMENSION);
         this.board = Board.createStandardBoard();
         this.boardDirection = BoardDirection.NORMAL;
         this.positionLog = new ArrayList <>();
@@ -93,21 +95,25 @@ public class GUI_Contents implements Publisher <Object> {
         this.frame.setJMenuBar(makeMenuBar());
         this.frame.addKeyListener(addHotKeys());
         this.frame.setSize(FRAME_DIMENSION);
-        this.frame.setMinimumSize(new Dimension(640, 640));
         this.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.frame.setResizable(true);
         this.frame.setLocationRelativeTo(null);
+        // this is for responsive design, now the chessboard will always stay square
         this.frame.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
-                int width = frame.getWidth() - chessBoard.getPreferredSize().width + (chessBoard.getPreferredSize().height -chessBoard.getHeight());
+                int width = frame.getWidth() - (chessBoard.getPreferredSize().width +14) + (chessBoard.getPreferredSize().height - chessBoard.getHeight());
                 int height = frame.getHeight();
                 logger.setPreferredSize(new Dimension(width, height));
+                logger.clear();
+                logger.printLog("ChessB Width: " + chessBoard.getWidth()
+                        , "ChessB Height: " + chessBoard.getHeight()
+                        , "Window Width: " + frame.getWidth()
+                        , "Window Height: " + frame.getHeight());
                 logger.revalidate();
             }
         });
         this.frame.setVisible(true);
-        logger.printLog("Hallo", "Tschüss", "Was geht");
     }
 
     public void addSubscriber (Subscriber <? super Object> subscriber) {
@@ -142,8 +148,7 @@ public class GUI_Contents implements Publisher <Object> {
     private KeyListener addHotKeys () {
         return new KeyListener() {
             @Override
-            public void keyTyped (KeyEvent e) {
-            }
+            public void keyTyped (KeyEvent e) {}
 
             @Override
             public void keyPressed (KeyEvent e) {
@@ -158,8 +163,7 @@ public class GUI_Contents implements Publisher <Object> {
             }
 
             @Override
-            public void keyReleased (KeyEvent e) {
-            }
+            public void keyReleased (KeyEvent e) {}
         };
     }
 
@@ -180,7 +184,10 @@ public class GUI_Contents implements Publisher <Object> {
         final JMenu dev = new JMenu("Dev");
         final JMenuItem test = new JMenuItem("Test");
         test.addActionListener(e -> logger.printLog("Test", "Test", "Test"));
+        final JMenuItem clear = new JMenuItem("Clear");
+        clear.addActionListener(e -> logger.clear());
         dev.add(test);
+        dev.add(clear);
         return dev;
     }
 
@@ -226,7 +233,7 @@ public class GUI_Contents implements Publisher <Object> {
         int result = fileChooser.showOpenDialog(this.frame);
         if (result == JFileChooser.APPROVE_OPTION) {
             selectedFile = fileChooser.getSelectedFile();
-            System.out.println("Selected file: " + selectedFile.getAbsolutePath());
+            logger.printLog("Selected file: " + selectedFile.getAbsolutePath());
         } else {
             return;
         }
@@ -260,7 +267,7 @@ public class GUI_Contents implements Publisher <Object> {
         int result = fileChooser.showSaveDialog(this.frame);
         if (result == JFileChooser.APPROVE_OPTION) {
             selectedFile = fileChooser.getSelectedFile();
-            System.out.println("Selected file: " + selectedFile.getPath());
+            logger.printLog("Selected file: " + selectedFile.getPath());
         } else {
             return;
         }
@@ -401,11 +408,11 @@ public class GUI_Contents implements Publisher <Object> {
                 thread.execute();
 
                 if (GUI_Contents.get().getGameBoard().currentPlayer().isInCheckmate()) {
-                    System.out.println("game over, " + GUI_Contents.get().getGameBoard().currentPlayer() + " is in checkmate!");
+                    GUI_Contents.get().logger.printLog("game over, " + GUI_Contents.get().getGameBoard().currentPlayer() + " is in checkmate!");
                 }
 
                 if (GUI_Contents.get().getGameBoard().currentPlayer().isInStalemate()) {
-                    System.out.println("game over, " + GUI_Contents.get().getGameBoard().currentPlayer() + " is in stalemate!");
+                    GUI_Contents.get().logger.printLog("game over, " + GUI_Contents.get().getGameBoard().currentPlayer() + " is in stalemate!");
                 }
             }
         }
@@ -417,7 +424,7 @@ public class GUI_Contents implements Publisher <Object> {
 
         @Override
         public void onComplete () {
-            System.out.println("Game over!");
+            GUI_Contents.get().logger.printLog("Game over!");
         }
     }
 
@@ -602,14 +609,8 @@ public class GUI_Contents implements Publisher <Object> {
     /**
      * @return true if it is a move resulting in a draw
      */
-
     public boolean isDrawByRepetition () {
-        if (this.positionLog.size() < 6) {
-            return false;
-        }
-        final Map <String, Long> amount = positionLog.stream().collect(Collectors.groupingBy(c -> c, Collectors.counting()));
-        amount.forEach((k, v) -> System.out.println(v > 2 ? v : ""));
-        return amount.containsValue(3L);
+        return positionLog.stream().collect(Collectors.groupingBy(c -> c, Collectors.counting())).containsValue(3L);
     }
 
     /**
@@ -876,7 +877,9 @@ public class GUI_Contents implements Publisher <Object> {
                                     .charAt(0) + board.getSquare(this.squareID)
                                     .getPiece().toString() + ".png")
                     );
-                    add(new JLabel(new ImageIcon(image.getScaledInstance(30, 60, 0))));
+                    add(new JLabel(new ImageIcon(image.getScaledInstance
+                            (CHESS_BOARD_DIMENSION.width/15, CHESS_BOARD_DIMENSION.height/8, 0))));
+
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

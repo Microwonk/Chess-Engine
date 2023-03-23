@@ -25,7 +25,7 @@ public class AudioHandler {
     }
 
     static void playSound (final int soundType) {
-        if (soundOn) return;
+        if (!soundOn) return;
 
         if (soundType > 2 || soundType < 0) return;
         try {
