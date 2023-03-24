@@ -23,10 +23,11 @@ public class Logger extends JPanel {
         this.textArea.setText("<------ Logger ------>\n");
         this.setPreferredSize(new Dimension(100, 640));
         this.textArea.setEditable(false);
+        this.textArea.setEnabled(false);
         this.textArea.setName("Logging");
         this.textArea.setFont(new Font(Font.MONOSPACED, Font.BOLD, 12));
         this.textArea.setBackground(new Color(70, 70, 70));
-        this.textArea.setForeground(new Color(124, 201, 87));
+        this.textArea.setDisabledTextColor(new Color(124, 201, 87));
         this.scrollPane = new JScrollPane(textArea);
         this.scrollPane.setBorder(null);
         this.add(scrollPane, gbc);

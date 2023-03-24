@@ -1,9 +1,8 @@
 package net.chess.gui;
 
 import net.chess.ai.AI;
-import net.chess.ai.AlphaBeta.AlphaBetaPruning;
-import net.chess.ai.Minimax;
-import net.chess.ai.Rand;
+import net.chess.ai.AlphaBeta.AlphaBeta;
+import net.chess.ai.AlphaBeta.AlphaBetaMultiThreaded;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.BoardUtilities;
 import net.chess.engine.board.Move;
@@ -25,7 +24,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.SubmissionPublisher;
 import java.util.stream.Collectors;
 
@@ -95,7 +93,6 @@ public class GUI_Contents implements Publisher <Object> {
         this.frame.add(this.takenPieces, BorderLayout.SOUTH);
         this.frame.add(logger, BorderLayout.EAST);
         this.frame.setJMenuBar(makeMenuBar());
-        this.frame.addKeyListener(addHotKeys());
         this.frame.setSize(FRAME_DIMENSION);
         this.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.frame.setResizable(true);
@@ -107,14 +104,15 @@ public class GUI_Contents implements Publisher <Object> {
                 int width = frame.getWidth() - (chessBoard.getPreferredSize().width +14) + (chessBoard.getPreferredSize().height - chessBoard.getHeight());
                 int height = frame.getHeight();
                 logger.setPreferredSize(new Dimension(width, height));
-                logger.clear();
-                logger.printLog("ChessB Width: " + chessBoard.getWidth()
+                //logger.clear();
+                /*logger.printLog("ChessB Width: " + chessBoard.getWidth()
                         , "ChessB Height: " + chessBoard.getHeight()
                         , "Window Width: " + frame.getWidth()
-                        , "Window Height: " + frame.getHeight());
+                        , "Window Height: " + frame.getHeight());*/ // testing dynamic window sizing
                 logger.revalidate();
             }
         });
+        this.frame.addKeyListener(addHotKeys());
         this.frame.setVisible(true);
     }
 
@@ -132,6 +130,10 @@ public class GUI_Contents implements Publisher <Object> {
 
     private GameDialog getGame () {
         return this.gameDialog;
+    }
+
+    public Logger getLogger() {
+        return this.logger;
     }
 
     public Board getGameBoard () {
@@ -154,7 +156,7 @@ public class GUI_Contents implements Publisher <Object> {
 
             @Override
             public void keyPressed (KeyEvent e) {
-                // System.out.println(e.getKeyCode()); // for finding out the hot keys KeyCode
+                //GUI_Contents.get().logger.printLog("Key Pressed: " + e.getKeyCode()); // for finding out the hot keys KeyCode
                 switch (e.getKeyCode()) {
                     case 37 -> prevMove(); // left arrow
                     case 39 -> nextMove(); // right arrow
@@ -440,7 +442,7 @@ public class GUI_Contents implements Publisher <Object> {
         @Override
         protected Move doInBackground () {
             //final AI miniMax = new Minimax(GUI_Contents.get().gameDialog.getSearchDepth());
-            final AI alphaBeta = new AlphaBetaPruning(GUI_Contents.get().gameDialog.getSearchDepth());
+            final AI alphaBeta = new AlphaBeta(GUI_Contents.get().gameDialog.getSearchDepth());
             final Move move = alphaBeta.execute(GUI_Contents.get().getGameBoard());
             if (move.isAttack()) {
                 AudioHandler.playSound(1);
@@ -457,11 +459,11 @@ public class GUI_Contents implements Publisher <Object> {
                 GUI_Contents.get().updateComputerMove(executedMove);
                 GUI_Contents.get().updateGameBoard(GUI_Contents.get().getGameBoard().currentPlayer().makeMove(executedMove).getTransitionBoard());
                 GUI_Contents.get().getMoveLog().addMove(executedMove);
-                GUI_Contents.get().getPositionLog().add(FenParser.parseFen(executedMove.getBoard()));
+                //GUI_Contents.get().getPositionLog().add(FenParser.parseFen(executedMove.getBoard()));
                 GUI_Contents.get().getTakenPieces().refresh(GUI_Contents.get().getMoveLog());
                 GUI_Contents.get().getChessBoard().drawBoard(GUI_Contents.get().getGameBoard());
                 GUI_Contents.get().moveMadeUpdate(PlayerType.COMPUTER);
-            } catch (Exception ignored) {
+            } catch (Exception e) {
                 GUI_Contents.get().logger.printLog("Execution failed...");
             }
             super.done();

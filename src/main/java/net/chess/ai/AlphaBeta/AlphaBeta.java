@@ -5,14 +5,11 @@ import net.chess.ai.Evaluator;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.Move;
 import net.chess.engine.player.MoveTransition;
+import net.chess.gui.GUI_Contents;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * recursive algorithm for alpha beta pruning -> WIP
@@ -20,13 +17,11 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author Nicolas Frey
  * @version 1.0
  */
-public class AlphaBetaPruning implements AI {
+public class AlphaBeta implements AI {
 
-    private final ExecutorService executorService;
     private final int searchDepth;
 
-    public AlphaBetaPruning (final int searchDepth) {
-        this.executorService = Executors.newFixedThreadPool (Runtime.getRuntime ().availableProcessors () - 1);
+    public AlphaBeta (final int searchDepth) {
         this.searchDepth = searchDepth;
     }
 
@@ -34,37 +29,30 @@ public class AlphaBetaPruning implements AI {
     public Move execute (final Board board) {
         List <Move> legalMoves = new ArrayList <> (board.currentPlayer ().getLegalMoves ());
 
-        AtomicReference <Move> bestMove = new AtomicReference <> (Move.MoveFactory.getNullMove ());
-        AtomicInteger highestSeenValue = new AtomicInteger (Integer.MIN_VALUE);
-        AtomicInteger lowestSeenValue = new AtomicInteger (Integer.MAX_VALUE);
+        Move bestMove = Move.MoveFactory.getNullMove();
+        int highestSeenValue = Integer.MIN_VALUE;
+        int lowestSeenValue = Integer.MAX_VALUE;
 
         for (final Move move : legalMoves) {
-            executorService.submit (() -> {
-                final MoveTransition moveTransition = board.currentPlayer ().makeMove (move);
-                if (moveTransition.getMoveStatus ().isDone ()) {
-                    final int currentValue = alphaBeta(moveTransition.getTransitionBoard (), this.searchDepth - 1, Integer.MIN_VALUE, Integer.MAX_VALUE, true);
-                    synchronized (this) {
-                        if (board.currentPlayer ().getTeam ().isWhite () && currentValue >= highestSeenValue.get ()) {
-                            highestSeenValue.set (currentValue);
-                            bestMove.set (move);
-                        } else if (board.currentPlayer ().getTeam ().isBlack () && currentValue <= lowestSeenValue.get ()) {
-                            lowestSeenValue.set (currentValue);
-                            bestMove.set (move);
-                        }
+            final MoveTransition moveTransition = board.currentPlayer ().makeMove (move);
+            if (moveTransition.getMoveStatus ().isDone ()) {
+                final int currentValue = alphaBeta(moveTransition.getTransitionBoard (), this.searchDepth - 1, Integer.MIN_VALUE, Integer.MAX_VALUE, true);
+                synchronized (this) {
+                    if (board.currentPlayer ().getTeam ().isWhite () && currentValue >= highestSeenValue) {
+                        highestSeenValue = currentValue;
+                        bestMove = move;
+                    } else if (board.currentPlayer ().getTeam ().isBlack () && currentValue <= lowestSeenValue) {
+                        lowestSeenValue = currentValue;
+                        bestMove = move;
                     }
                 }
-            });
+            }
         }
 
-        // Wait for all threads to complete
-        executorService.shutdown ();
-        try {
-            executorService.awaitTermination (Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-        } catch (InterruptedException e) {
-            e.printStackTrace ();
-        }
-
-        return bestMove.get ();
+        GUI_Contents.get().getLogger().printLog("Best Move: " + bestMove
+                , "Evaluation: " + highestSeenValue
+                , "Color: " + board.currentPlayer());
+        return bestMove;
     }
 
     private int alphaBeta (Board board, int depth, int alpha, int beta, boolean maximizingPlayer) {
