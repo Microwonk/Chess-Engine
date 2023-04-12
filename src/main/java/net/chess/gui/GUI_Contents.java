@@ -117,7 +117,7 @@ public class GUI_Contents implements Publisher <Object> {
     }
 
     public void addSubscriber (Subscriber <? super Object> subscriber) {
-        publisher.subscribe(subscriber);
+
     }
 
     private void notifySubscribers (Object obj) {
@@ -251,7 +251,7 @@ public class GUI_Contents implements Publisher <Object> {
 
             this.chessBoard.drawBoard(this.board);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.printLog(String.valueOf(e));
         }
     }
 
@@ -282,7 +282,7 @@ public class GUI_Contents implements Publisher <Object> {
             properties.store(new FileWriter("config/config.properties"), null);
             bw.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.printLog(String.valueOf(e));
         }
 
     }
@@ -311,7 +311,7 @@ public class GUI_Contents implements Publisher <Object> {
             try {
                 properties.store(new FileWriter("config/config.properties"), null);
             } catch (IOException ex) {
-                throw new RuntimeException(ex);
+                logger.printLog(String.valueOf(ex));
             }
             chessBoard.drawBoard(board);
         });
@@ -325,7 +325,7 @@ public class GUI_Contents implements Publisher <Object> {
             try {
                 properties.store(new FileWriter("config/config.properties"), null);
             } catch (IOException ex) {
-                throw new RuntimeException(ex);
+                logger.printLog(String.valueOf(ex));
             }
             chessBoard.drawBoard(board);
         });
@@ -339,7 +339,7 @@ public class GUI_Contents implements Publisher <Object> {
             try {
                 properties.store(new FileWriter("config/config.properties"), null);
             } catch (IOException ex) {
-                throw new RuntimeException(ex);
+                logger.printLog(String.valueOf(ex));
             }
             chessBoard.drawBoard(board);
         });
@@ -379,7 +379,7 @@ public class GUI_Contents implements Publisher <Object> {
 
     @Override
     public void subscribe (Subscriber <? super Object> subscriber) {
-
+        this.publisher.subscribe(subscriber);
     }
 
     /**
@@ -435,8 +435,7 @@ public class GUI_Contents implements Publisher <Object> {
      * SwingWorker using threads to do the work in the background instead of the thread of the gui
      */
     private static class backGroundThreadForAI extends SwingWorker <Move, String> {
-        private backGroundThreadForAI () {
-        }
+        private backGroundThreadForAI () {}
 
         // what should be done in the background thread
         @Override
@@ -885,7 +884,7 @@ public class GUI_Contents implements Publisher <Object> {
                             (CHESS_BOARD_DIMENSION.width/15, CHESS_BOARD_DIMENSION.height/8, 0))));
 
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    logger.printLog(String.valueOf(e));
                 }
             }
         }
@@ -901,7 +900,7 @@ public class GUI_Contents implements Publisher <Object> {
                             add(new JLabel(new ImageIcon(ImageIO.read(new File(miscPath + "highlighting.png"))
                                     .getScaledInstance(25, 25, 0))));
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            logger.printLog(String.valueOf(e));
                         }
                     }
                 }

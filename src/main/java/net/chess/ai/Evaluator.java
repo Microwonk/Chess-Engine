@@ -37,7 +37,7 @@ public class Evaluator {
                 + evaluateMobility(board)
                 + evaluateKingSafety(board)
                 + evaluateCenterControl(board);
-        //evaluatePawnStructure(board)
+                //+ evaluatePawnStructure(board);
         if (isCheckmate(board)) {
             if (board.currentPlayer().isInCheck()) {
                 score -= WINNING_SCORE;
