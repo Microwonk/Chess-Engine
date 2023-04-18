@@ -10,6 +10,7 @@ import net.chess.engine.pieces.*;
 import net.chess.engine.player.MoveTransition.MoveStatus;
 import net.chess.engine.player.MoveTransition;
 import net.chess.exception.ChessException;
+import net.chess.gui.audio.AudioHandler;
 import net.chess.parsing.FenParser;
 
 import javax.imageio.ImageIO;

@@ -22,7 +22,7 @@ public class PropertyVars {
     protected static boolean highlightLegalMovesActive;
     protected static String savePath;
     protected static boolean signifyChecksActive;
-    protected static boolean soundOn;
+    public static boolean soundOn;
     protected static ColorPack colorPack;
 
     static {
