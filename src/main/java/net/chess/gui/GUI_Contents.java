@@ -2,7 +2,6 @@ package net.chess.gui;
 
 import net.chess.ai.AI;
 import net.chess.ai.AlphaBeta.AlphaBeta;
-import net.chess.ai.AlphaBeta.AlphaBetaMultiThreaded;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.BoardUtilities;
 import net.chess.engine.board.Move;
@@ -42,7 +41,6 @@ import static net.chess.gui.PropertyVars.*;
  */
 public class GUI_Contents implements Publisher <Object> {
 
-    // TODO: make the takenpieces panel merge with the chesspanel, so that it adjusts even better
     private final JFrame frame;
     private final ChessBoard chessBoard;
     private final TakenPieces takenPieces;
@@ -50,6 +48,7 @@ public class GUI_Contents implements Publisher <Object> {
     private Board board;
     private final MoveLog moveLog;
     private final GameDialog gameDialog;
+    private SettingsDialog settingsDialog;
     private final static Dimension FRAME_DIMENSION = new Dimension(800, 640);
     private final Dimension CHESS_BOARD_DIMENSION = new Dimension(400, 400);
     private final Dimension SQUARE_DIMENSION = new Dimension(50, 50);
@@ -104,6 +103,8 @@ public class GUI_Contents implements Publisher <Object> {
                 int width = frame.getWidth() - (chessBoard.getPreferredSize().width +14) + (chessBoard.getPreferredSize().height - chessBoard.getHeight());
                 int height = frame.getHeight();
                 logger.setPreferredSize(new Dimension(width, height));
+                Font f = logger.getTextArea().getFont();
+                logger.getTextArea().setFont(new Font(f.getFontName(), f.getStyle(), (logger.getWidth()/18)));
                 //logger.clear();
                 /*logger.printLog("ChessB Width: " + chessBoard.getWidth()
                         , "ChessB Height: " + chessBoard.getHeight()
@@ -114,6 +115,7 @@ public class GUI_Contents implements Publisher <Object> {
         });
         this.frame.addKeyListener(addHotKeys());
         this.frame.setVisible(true);
+        PropertyVars.init();
     }
 
     public void addSubscriber (Subscriber <? super Object> subscriber) {
@@ -138,6 +140,10 @@ public class GUI_Contents implements Publisher <Object> {
 
     public Board getGameBoard () {
         return this.board;
+    }
+
+    public JFrame getFrame () {
+        return frame;
     }
 
     public void show () {
@@ -292,6 +298,15 @@ public class GUI_Contents implements Publisher <Object> {
      */
     private JMenu createSettingsMenu () {
         final JMenu settingsMenu = new JMenu("Settings");
+        final JMenuItem more = new JMenuItem("More...");
+        more.setFont(frame.getFont());
+        more.addActionListener(e -> {
+            if (this.settingsDialog == null) {
+                this.settingsDialog = new SettingsDialog(this.frame);
+            }
+            this.settingsDialog.setVisible(true);
+        });
+
         final JMenuItem flip = new JMenuItem("Flip Board");
         flip.addActionListener(e -> {
             boardDirection = boardDirection.opposite();
@@ -304,23 +319,42 @@ public class GUI_Contents implements Publisher <Object> {
         final JCheckBoxMenuItem highlightingLegalMovesToggle = new JCheckBoxMenuItem("Highlight Moves");
         highlightingLegalMovesToggle.setSelected(highlightLegalMovesActive);
         highlightingLegalMovesToggle.setFont(frame.getFont());
-        highlightingLegalMovesToggle.addActionListener(e -> {
-            highlightLegalMovesActive = highlightingLegalMovesToggle.isSelected();
+        highlightingLegalMovesToggle.addActionListener(highLightLegalMovesAction(highlightingLegalMovesToggle));
+
+        final JCheckBoxMenuItem signifyChecksToggle = new JCheckBoxMenuItem("Signify Checks");
+        signifyChecksToggle.setSelected(signifyChecksActive);
+        signifyChecksToggle.setFont(frame.getFont());
+        signifyChecksToggle.addActionListener(signifyChecksAction(signifyChecksToggle));
+
+        final JCheckBoxMenuItem soundToggle = new JCheckBoxMenuItem("Toggle Sound");
+        soundToggle.setSelected(soundOn);
+        soundToggle.setFont(frame.getFont());
+        soundToggle.addActionListener(soundToggleChecksAction(soundToggle));
+
+        settingsMenu.add(more);
+        settingsMenu.add(highlightingLegalMovesToggle);
+        settingsMenu.add(signifyChecksToggle);
+        settingsMenu.add(soundToggle);
+        settingsMenu.setFont(frame.getFont());
+        return settingsMenu;
+    }
+
+    public ActionListener highLightLegalMovesAction(JCheckBoxMenuItem m) {
+        return e -> {
+            highlightLegalMovesActive = m.isSelected();
             properties.setProperty("highlightLegalMovesActive", highlightLegalMovesActive ? "true" : "false");
-            //TODO: look at this, this is how you save .properties
             try {
                 properties.store(new FileWriter("config/config.properties"), null);
             } catch (IOException ex) {
                 logger.printLog(String.valueOf(ex));
             }
             chessBoard.drawBoard(board);
-        });
+        };
+    }
 
-        final JCheckBoxMenuItem signifyChecksToggle = new JCheckBoxMenuItem("Signify Checks");
-        signifyChecksToggle.setSelected(signifyChecksActive);
-        signifyChecksToggle.setFont(frame.getFont());
-        signifyChecksToggle.addActionListener(e -> {
-            signifyChecksActive = signifyChecksToggle.isSelected();
+    public ActionListener signifyChecksAction(JCheckBoxMenuItem m) {
+        return e -> {
+            signifyChecksActive = m.isSelected();
             properties.setProperty("signifyChecksActive", signifyChecksActive ? "true" : "false");
             try {
                 properties.store(new FileWriter("config/config.properties"), null);
@@ -328,13 +362,12 @@ public class GUI_Contents implements Publisher <Object> {
                 logger.printLog(String.valueOf(ex));
             }
             chessBoard.drawBoard(board);
-        });
+        };
+    }
 
-        final JCheckBoxMenuItem soundToggle = new JCheckBoxMenuItem("Toggle Sound");
-        soundToggle.setSelected(soundOn);
-        soundToggle.setFont(frame.getFont());
-        soundToggle.addActionListener(e -> {
-            soundOn = soundToggle.isSelected();
+    public ActionListener soundToggleChecksAction(JCheckBoxMenuItem m) {
+        return e -> {
+            soundOn = m.isSelected();
             properties.setProperty("soundOn", soundOn ? "true" : "false");
             try {
                 properties.store(new FileWriter("config/config.properties"), null);
@@ -342,13 +375,7 @@ public class GUI_Contents implements Publisher <Object> {
                 logger.printLog(String.valueOf(ex));
             }
             chessBoard.drawBoard(board);
-        });
-
-        settingsMenu.add(highlightingLegalMovesToggle);
-        settingsMenu.add(signifyChecksToggle);
-        settingsMenu.add(soundToggle);
-        settingsMenu.setFont(frame.getFont());
-        return settingsMenu;
+        };
     }
 
     /**
@@ -476,7 +503,7 @@ public class GUI_Contents implements Publisher <Object> {
         notifySubscribers(playerType);
     }
 
-    private ChessBoard getChessBoard () {
+    ChessBoard getChessBoard () {
         return this.chessBoard;
     }
 
@@ -984,12 +1011,12 @@ public class GUI_Contents implements Publisher <Object> {
                     || BoardUtilities.THIRD_ROW[this.squareID]
                     || BoardUtilities.FIFTH_ROW[this.squareID]
                     || BoardUtilities.SEVENTH_ROW[this.squareID]) {
-                return (this.squareID % 2 == 0 ? lightColour : darkColour);
+                return (this.squareID % 2 == 0 ? colorPack.dark() : colorPack.light());
             } else if (BoardUtilities.SECOND_ROW[this.squareID]
                     || BoardUtilities.FOURTH_ROW[this.squareID]
                     || BoardUtilities.SIXTH_ROW[this.squareID]
                     || BoardUtilities.EIGHTH_ROW[this.squareID]) {
-                return (this.squareID % 2 != 0 ? lightColour : darkColour);
+                return (this.squareID % 2 != 0 ? colorPack.dark() : colorPack.light());
             }
             throw new ChessException("Square is off the bounds of the board.");
         }

@@ -43,4 +43,8 @@ public class Logger extends JPanel {
     public void clear() {
         this.textArea.setText(null);
     }
+
+    public JTextArea getTextArea () {
+        return textArea;
+    }
 }

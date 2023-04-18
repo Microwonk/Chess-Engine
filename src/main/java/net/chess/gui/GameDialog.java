@@ -6,10 +6,12 @@ import net.chess.engine.player.Player;
 import javax.swing.*;
 import java.awt.*;
 
+import static net.chess.gui.GUI_Contents.PlayerType;
+
 public class GameDialog extends JDialog {
 
-    private GUI_Contents.PlayerType whitePlayerType;
-    private GUI_Contents.PlayerType blackPlayerType;
+    private PlayerType whitePlayerType;
+    private PlayerType blackPlayerType;
     private final JSpinner searchDepthSpinner;
 
     private static final String HUMAN_TEXT = "Human";
@@ -17,6 +19,7 @@ public class GameDialog extends JDialog {
 
     public GameDialog (final JFrame parent) {
         super(parent, "Game", true);
+        this.setDefaultCloseOperation(JDialog.HIDE_ON_CLOSE);
         final JPanel myPanel = new JPanel(new GridLayout(0, 1));
         final JRadioButton whiteHumanButton = new JRadioButton(HUMAN_TEXT);
         final JRadioButton whiteComputerButton = new JRadioButton(COMPUTER_TEXT);

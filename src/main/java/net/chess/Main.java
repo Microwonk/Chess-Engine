@@ -19,7 +19,7 @@ public class Main {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        JFrame.setDefaultLookAndFeelDecorated(true);
+        JFrame.setDefaultLookAndFeelDecorated(false);
         GUI_Contents.get().show();
     }
 }

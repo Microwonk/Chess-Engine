@@ -11,7 +11,11 @@ public class PropertyVars {
     //TODO: let user change .properties in settings menu -> properties profiles and so on
 
     //config variables
-    protected static final java.util.List <Color[]> colorPacks = List.of(new Color[]{new Color(196, 189, 175), new Color(155, 132, 75)}, new Color[]{}); // more color packs
+    protected static final List <ColorPack> defaultColorPacks = List.of(
+            new ColorPack(new Color(196, 189, 175), new Color(155, 132, 75), "Default"),
+            new ColorPack(new Color(255, 100, 100), new Color(100, 20, 20), "Red"),
+            new ColorPack(new Color(200, 10, 200), new Color(90, 10, 90), "Purple")
+    );
     protected static Properties properties = new Properties();
     protected static String artPath;
     protected static String miscPath;
@@ -19,8 +23,7 @@ public class PropertyVars {
     protected static String savePath;
     protected static boolean signifyChecksActive;
     protected static boolean soundOn;
-    protected static Color lightColour;
-    protected static Color darkColour;
+    protected static ColorPack colorPack;
 
     static {
         try {
@@ -34,8 +37,15 @@ public class PropertyVars {
         signifyChecksActive = properties.getProperty("signifyChecksActive").equals("true");
         highlightLegalMovesActive = properties.getProperty("highlightLegalMovesActive").equals("true");
         soundOn = properties.getProperty("soundOn").equals("true");
-        lightColour = colorPacks.get(Integer.parseInt(properties.getProperty("colorPack")))[0];
-        darkColour = colorPacks.get(Integer.parseInt(properties.getProperty("colorPack")))[1];
+        colorPack = getPackByName(properties.getProperty("colorPack"));
+    }
+
+    public static void init () {
+        // not inited yet GUI_Contents.get().getLogger().printLog("Initialized variables");
+    }
+
+    public static ColorPack getPackByName(String name) {
+        return defaultColorPacks.stream().filter(c -> c.name().equals(name)).toList().get(0);
     }
 
 }
