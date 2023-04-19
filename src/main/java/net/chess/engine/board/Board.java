@@ -93,12 +93,16 @@ public class Board {
         return Collections.unmodifiableList(legalMoves);
     }
 
+    public Player getCurrentPlayer () {
+        return currentPlayer;
+    }
+
     /**
      * @param chessBoard for the board that should be calculated for
      * @param team       for which team it should be calculated for
      * @return all Pieces of said Team on said Board
      */
-    private static Collection<Piece> calculateActivePieces(final List<Square> chessBoard, final Team team) {
+    public static Collection<Piece> calculateActivePieces(final List<Square> chessBoard, final Team team) {
         final List<Piece> activePieces = new ArrayList<>();
 
         for (final Square square : chessBoard) {

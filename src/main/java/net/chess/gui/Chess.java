@@ -2,6 +2,7 @@ package net.chess.gui;
 
 import net.chess.ai.AI;
 import net.chess.ai.AlphaBeta.AlphaBeta;
+import net.chess.ai.AlphaBeta.AlphaBetaMultiThreaded;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.BoardUtilities;
 import net.chess.engine.board.Move;
@@ -27,6 +28,7 @@ import java.util.*;
 import java.util.concurrent.SubmissionPublisher;
 import java.util.stream.Collectors;
 
+import static java.lang.Thread.sleep;
 import static java.util.concurrent.Flow.*;
 import static javax.swing.SwingUtilities.isLeftMouseButton;
 import static javax.swing.SwingUtilities.isRightMouseButton;
@@ -419,7 +421,7 @@ public class Chess implements Publisher <Object> {
         @Override
         protected Move doInBackground () {
             //final AI miniMax = new Minimax(GUI_Contents.get().gameDialog.getSearchDepth());
-            final AI alphaBeta = new AlphaBeta(Chess.get().gameDialog.getSearchDepth());
+            final AI alphaBeta = new AlphaBetaMultiThreaded(Chess.get().gameDialog.getSearchDepth());
             final Move move = alphaBeta.execute(Chess.get().getGameBoard());
             if (move.isAttack()) {
                 AudioHandler.playSound(1);
@@ -436,7 +438,7 @@ public class Chess implements Publisher <Object> {
                 Chess.get().updateComputerMove(executedMove);
                 Chess.get().updateGameBoard(Chess.get().getGameBoard().currentPlayer().makeMove(executedMove).getTransitionBoard());
                 Chess.get().getMoveLog().addMove(executedMove);
-                //GUI_Contents.get().getPositionLog().add(FenParser.parseFen(executedMove.getBoard()));
+                Chess.get().getPositionLog().add(FenParser.parseFen(executedMove.getBoard()));
                 Chess.get().getTakenPieces().refresh(Chess.get().getMoveLog());
                 Chess.get().getChessBoard().drawBoard(Chess.get().getGameBoard());
                 Chess.get().moveMadeUpdate(PlayerType.COMPUTER);
@@ -544,6 +546,19 @@ public class Chess implements Publisher <Object> {
         } else {
             this.movingEnabled = true;
         }
+    }
+
+    private void playMoveLog(MoveLog moveLog) {
+        this.board = Board.createStandardBoard();
+        chessBoard.drawBoard(board);
+        moveLog.forEach(m -> {
+            this.board = board.getCurrentPlayer().makeMove(m).getTransitionBoard();
+            Thread t = new Thread(() -> {
+                SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
+            });
+            t.start();
+            System.out.println("Hallo");
+        });
     }
 
     /**
@@ -734,6 +749,7 @@ public class Chess implements Publisher <Object> {
                         sourceSquare = null;
                         destinationSquare = null;
                         movedPiece = null;
+                        playMoveLog(FenParser.parseIntoLog(FenParser.parsePGN(moveLog)));
                         SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
                     }
                 }
@@ -823,6 +839,7 @@ public class Chess implements Publisher <Object> {
                         currentMove++;
                         board = transition.getTransitionBoard();
                         moveLog.addMove(move);
+                        logger.printLog(FenParser.parsePGN(moveLog));
                         positionLog.add(FenParser.parseFen(transition.getTransitionBoard()));
                     }
                     sourceSquare = null;

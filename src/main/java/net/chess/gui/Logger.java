@@ -34,8 +34,9 @@ public class Logger extends JPanel {
         this.setVisible(true);
     }
 
-    public void printLog(final String... text) {
-        for (String s: text) {
+    @SafeVarargs
+    public final <T> void printLog (final T... text) {
+        for (T s: text) {
             this.textArea.append(">\\ " + s + '\n');
         }
     }

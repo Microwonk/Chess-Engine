@@ -4,14 +4,24 @@ import net.chess.engine.Team;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.Board.Builder;
 import net.chess.engine.board.BoardUtilities;
+import net.chess.engine.board.Move;
 import net.chess.engine.pieces.*;
+import net.chess.engine.player.BlackPlayer;
 import net.chess.exception.ChessException;
+import net.chess.gui.Chess.MoveLog;
+
+import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class FenParser {
 
     private FenParser () {
         throw new ChessException("Parser may not be initialized");
     }
+
+    private static final String FEN_REGEX = "([pnbrqkPNBRQK1-8]+/){7}[pnbrqkPNBRQK1-8]+\\s[wb]\\s[KQkq-]{1,4}\\s[a-h][36]\\s\\d+\\s\\d+";
+    private static final String MOVE_REGEX = "([pnbrqkPNBRQK]{1})?([a-h]{1}[1-8]{1})?-?x?([a-h]{1}[1-8]{1})[\\+#]?";
 
     public static Board createGameFromFen (final String fenString) {
         final Builder builder = new Builder();
@@ -33,6 +43,31 @@ public class FenParser {
         }
         builder.setMoveMaker(splitter[1].equals("w") ? Team.WHITE : Team.BLACK);
         return builder.build();
+    }
+
+    public static String parseFen (final Board board) { // currently not worrying about the full moves -> 0 1
+        return calculateFEN(board) + " " + currentPlayer(board) + " " + castleText(board) + " " + enPassantSquare(board) + " 0 1";
+    }
+
+    public static String parsePGN(final MoveLog moveLog) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < moveLog.size(); i++) {
+            builder.append(i + 1).append('.').append(moveLog.get(i).toString()).append('\n');
+        }
+        return builder.toString();
+    }
+
+    public static MoveLog parseIntoLog(final String pgn) {
+        final MoveLog moveLog = new MoveLog();
+        String[] moves = pgn.replaceAll("\\d{1,3}\\.", "").split("\n");
+        Board board = Board.createStandardBoard();
+        for (int i = 0; i < moves.length; i++) {
+            int finalI = i;
+            Move add = board.getAllLegalMoves().stream().filter(m -> m.toString().equals(moves[finalI])).toList().get(0);
+            moveLog.add(add);
+            board = board.currentPlayer().makeMove(add).getTransitionBoard();
+        }
+        return moveLog;
     }
 
     private static Piece createPieceFromFen (final char piece, final int piecePosition, final String[] args0, final int count) {
@@ -64,10 +99,6 @@ public class FenParser {
             default -> throw new ChessException("not a valid FEN notation Character, FEN parsing failed");
         }
         return p;
-    }
-
-    public static String parseFen (final Board board) { // currently not worrying about the full moves -> 0 1
-        return calculateFEN(board) + " " + currentPlayer(board) + " " + castleText(board) + " " + enPassantSquare(board) + " 0 1";
     }
 
     private static String enPassantSquare (final Board board) {
