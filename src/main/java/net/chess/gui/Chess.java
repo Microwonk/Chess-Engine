@@ -548,19 +548,6 @@ public class Chess implements Publisher <Object> {
         }
     }
 
-    private void playMoveLog(MoveLog moveLog) {
-        this.board = Board.createStandardBoard();
-        chessBoard.drawBoard(board);
-        moveLog.forEach(m -> {
-            this.board = board.getCurrentPlayer().makeMove(m).getTransitionBoard();
-            Thread t = new Thread(() -> {
-                SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
-            });
-            t.start();
-            System.out.println("Hallo");
-        });
-    }
-
     /**
      * visualizes the next move with sound
      */
@@ -749,7 +736,6 @@ public class Chess implements Publisher <Object> {
                         sourceSquare = null;
                         destinationSquare = null;
                         movedPiece = null;
-                        playMoveLog(FenParser.parseIntoLog(FenParser.parsePGN(moveLog)));
                         SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
                     }
                 }

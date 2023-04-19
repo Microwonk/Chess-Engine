@@ -57,6 +57,7 @@ public class FenParser {
         return builder.toString();
     }
 
+    // TODO: implement in "Chess" class
     public static MoveLog parseIntoLog(final String pgn) {
         final MoveLog moveLog = new MoveLog();
         String[] moves = pgn.replaceAll("\\d{1,3}\\.", "").split("\n");
