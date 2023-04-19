@@ -16,14 +16,6 @@
 log/
 target/
 
-# Compiled class file
-*.class
-
-# Misc
-*.log
-*.properties
-
-# Package Files #
 *.jar
 *.war
 *.nar
@@ -32,3 +24,4 @@ target/
 *.tar.gz
 *.rar
 *.class
+*.properties
