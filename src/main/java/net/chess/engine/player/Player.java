@@ -31,7 +31,7 @@ public abstract class Player {
         // concatenating the list of legal moves AND the castling moves
         this.legalMoves = Stream.concat(legalMoves.stream(), calculateKingCastles
                 (legalMoves, opponentsMoves).stream()).toList();
-        this.isInCheck = !Player.calculateAttacksOnSquare(this.playerKing.getPiecePosition(), opponentsMoves).isEmpty();
+        this.isInCheck = !Player.calculateAttacksOnSquare(this.playerKing.getPosition(), opponentsMoves).isEmpty();
     }
 
     protected static Collection<Move> calculateAttacksOnSquare(final int piecePosition
@@ -101,7 +101,7 @@ public abstract class Player {
         final Board transitionBoard = move.execute();
         final Collection<Move> kingAttacks = Player.calculateAttacksOnSquare(
                 transitionBoard.currentPlayer()
-                        .getOpponent().getPlayerKing().getPiecePosition()
+                        .getOpponent().getPlayerKing().getPosition()
                 , transitionBoard.currentPlayer().getLegalMoves()
         );
 

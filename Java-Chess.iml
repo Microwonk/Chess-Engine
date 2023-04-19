@@ -11,7 +11,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="jaco-mp3-player-0.9.3" level="project" />
-    <orderEntry type="library" name="flatlaf-3.0" level="project" />
+    <orderEntry type="library" name="Maven: javazoom:jlayer:1.0.1" level="project" />
+    <orderEntry type="library" name="Maven: com.formdev:flatlaf:3.0" level="project" />
   </component>
 </module>

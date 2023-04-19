@@ -5,7 +5,8 @@ import net.chess.engine.pieces.*;
 import net.chess.engine.player.BlackPlayer;
 import net.chess.engine.player.Player;
 import net.chess.engine.player.WhitePlayer;
-import net.chess.gui.GUI_Contents;
+import net.chess.gui.Chess;
+import net.chess.parsing.FenParser;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -133,44 +134,7 @@ public class Board {
      * @return a standard Chessboard
      */
     public static Board createStandardBoard() {
-        final Builder builder = new Builder();
-        // BLACK
-        builder.setPiece(new Rook(0, Team.BLACK));
-        builder.setPiece(new Knight(1, Team.BLACK));
-        builder.setPiece(new Bishop(2, Team.BLACK));
-        builder.setPiece(new Queen(3, Team.BLACK));
-        builder.setPiece(new King(4, Team.BLACK));
-        builder.setPiece(new Bishop(5, Team.BLACK));
-        builder.setPiece(new Knight(6, Team.BLACK));
-        builder.setPiece(new Rook(7, Team.BLACK));
-        builder.setPiece(new Pawn(8, Team.BLACK));
-        builder.setPiece(new Pawn(9, Team.BLACK));
-        builder.setPiece(new Pawn(10, Team.BLACK));
-        builder.setPiece(new Pawn(11, Team.BLACK));
-        builder.setPiece(new Pawn(12, Team.BLACK));
-        builder.setPiece(new Pawn(13, Team.BLACK));
-        builder.setPiece(new Pawn(14, Team.BLACK));
-        builder.setPiece(new Pawn(15, Team.BLACK));
-        // WHITE
-        builder.setPiece(new Pawn(48, Team.WHITE));
-        builder.setPiece(new Pawn(49, Team.WHITE));
-        builder.setPiece(new Pawn(50, Team.WHITE));
-        builder.setPiece(new Pawn(51, Team.WHITE));
-        builder.setPiece(new Pawn(52, Team.WHITE));
-        builder.setPiece(new Pawn(53, Team.WHITE));
-        builder.setPiece(new Pawn(54, Team.WHITE));
-        builder.setPiece(new Pawn(55, Team.WHITE));
-        builder.setPiece(new Rook(56, Team.WHITE));
-        builder.setPiece(new Knight(57, Team.WHITE));
-        builder.setPiece(new Bishop(58, Team.WHITE));
-        builder.setPiece(new Queen(59, Team.WHITE));
-        builder.setPiece(new King(60, Team.WHITE));
-        builder.setPiece(new Bishop(61, Team.WHITE));
-        builder.setPiece(new Knight(62, Team.WHITE));
-        builder.setPiece(new Rook(63, Team.WHITE));
-        // white to Move first
-        builder.setMoveMaker(Team.WHITE);
-        return builder.build();
+        return FenParser.createGameFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     }
 
     public Square getSquare(final int squareCoordinate) {
@@ -191,7 +155,7 @@ public class Board {
     }
 
     public boolean isGameOver() {
-        return isGameOverCheckMate() || isGameOverStaleMate() || GUI_Contents.get().isDrawByLackOfMaterial() || GUI_Contents.get().isDrawByRepetition();
+        return isGameOverCheckMate() || isGameOverStaleMate() || Chess.get().isDrawByLackOfMaterial() || Chess.get().isDrawByRepetition();
     }
 
     public Piece getPiece(final int destinationCoordinate) {
@@ -214,7 +178,7 @@ public class Board {
         }
 
         public Builder setPiece(final Piece piece) {
-            this.boardConfiguration.put(piece.getPiecePosition(), piece);
+            this.boardConfiguration.put(piece.getPosition(), piece);
             return this;
         }
 

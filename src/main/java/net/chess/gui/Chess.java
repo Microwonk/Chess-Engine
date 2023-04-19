@@ -9,8 +9,8 @@ import net.chess.engine.board.Square;
 import net.chess.engine.pieces.*;
 import net.chess.engine.player.MoveTransition.MoveStatus;
 import net.chess.engine.player.MoveTransition;
-import net.chess.exception.ChessException;
 import net.chess.gui.audio.AudioHandler;
+import net.chess.gui.util.Properties;
 import net.chess.parsing.FenParser;
 
 import javax.imageio.ImageIO;
@@ -29,10 +29,11 @@ import java.util.stream.Collectors;
 
 import static java.util.concurrent.Flow.*;
 import static javax.swing.SwingUtilities.isLeftMouseButton;
+import static javax.swing.SwingUtilities.isRightMouseButton;
 import static net.chess.engine.board.Move.PawnMove;
 import static net.chess.engine.board.Move.PawnPromotion;
 import static net.chess.engine.pieces.Piece.PieceType;
-import static net.chess.gui.PropertyVars.*;
+import static net.chess.gui.util.Properties.*;
 
 /**
  * Container for all the GUI Content Management and Connection of all the Components -> Singleton type
@@ -40,7 +41,7 @@ import static net.chess.gui.PropertyVars.*;
  * @author Nicolas Frey
  * @version 1.0
  */
-public class GUI_Contents implements Publisher <Object> {
+public class Chess implements Publisher <Object> {
 
     private final JFrame frame;
     private final ChessBoard chessBoard;
@@ -68,9 +69,9 @@ public class GUI_Contents implements Publisher <Object> {
 
 
     // instantiating the Singleton
-    private static final GUI_Contents GUI_INSTANCE = new GUI_Contents();
+    private static final Chess INSTANCE = new Chess();
 
-    private GUI_Contents () {
+    private Chess () {
         this.frame = new JFrame("Chess by Nicolas Frey");
         this.frame.setMinimumSize(FRAME_DIMENSION);
         this.board = Board.createStandardBoard();
@@ -97,6 +98,7 @@ public class GUI_Contents implements Publisher <Object> {
         this.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.frame.setResizable(true);
         this.frame.setLocationRelativeTo(null);
+
         // this is for responsive design, now the chessboard will always stay square
         this.frame.addComponentListener(new ComponentAdapter() {
             @Override
@@ -106,29 +108,25 @@ public class GUI_Contents implements Publisher <Object> {
                 logger.setPreferredSize(new Dimension(width, height));
                 Font f = logger.getTextArea().getFont();
                 logger.getTextArea().setFont(new Font(f.getFontName(), f.getStyle(), (logger.getWidth()/18)));
-                //logger.clear();
-                /*logger.printLog("ChessB Width: " + chessBoard.getWidth()
-                        , "ChessB Height: " + chessBoard.getHeight()
-                        , "Window Width: " + frame.getWidth()
-                        , "Window Height: " + frame.getHeight());*/ // testing dynamic window sizing
                 logger.revalidate();
             }
         });
+
         this.frame.addKeyListener(addHotKeys());
         this.frame.setVisible(true);
-        PropertyVars.init();
+        Properties.init();
     }
 
     public void addSubscriber (Subscriber <? super Object> subscriber) {
-
+        publisher.subscribe(subscriber);
     }
 
     private void notifySubscribers (Object obj) {
         publisher.submit(obj);
     }
 
-    public static GUI_Contents get () {
-        return GUI_INSTANCE;
+    public static Chess get () {
+        return INSTANCE;
     }
 
     private GameDialog getGame () {
@@ -143,14 +141,10 @@ public class GUI_Contents implements Publisher <Object> {
         return this.board;
     }
 
-    public JFrame getFrame () {
-        return frame;
-    }
-
     public void show () {
-        GUI_Contents.get().getMoveLog().clear();
-        GUI_Contents.get().getTakenPieces().refresh(GUI_Contents.get().getMoveLog());
-        GUI_Contents.get().getChessBoard().drawBoard(GUI_Contents.get().getGameBoard());
+        Chess.get().getMoveLog().clear();
+        Chess.get().getTakenPieces().refresh(Chess.get().getMoveLog());
+        Chess.get().getChessBoard().drawBoard(Chess.get().getGameBoard());
     }
 
     /**
@@ -187,19 +181,7 @@ public class GUI_Contents implements Publisher <Object> {
         menuBar.add(createFileMenu());
         menuBar.add(createSettingsMenu());
         menuBar.add(createOptionsMenu());
-        menuBar.add(dev());
         return menuBar;
-    }
-
-    private JMenu dev () {
-        final JMenu dev = new JMenu("Dev");
-        final JMenuItem test = new JMenuItem("Test");
-        test.addActionListener(e -> logger.printLog("Test", "Test", "Test"));
-        final JMenuItem clear = new JMenuItem("Clear");
-        clear.addActionListener(e -> logger.clear());
-        dev.add(test);
-        dev.add(clear);
-        return dev;
     }
 
     /**
@@ -236,7 +218,7 @@ public class GUI_Contents implements Publisher <Object> {
     /**
      * load from .fen and later from .pgn or db
      */
-    private void loadGame () {
+    private void loadGame() {
         final JFileChooser fileChooser = new JFileChooser();
         final File selectedFile;
         fileChooser.setCurrentDirectory(new File(savePath + "."));
@@ -252,8 +234,7 @@ public class GUI_Contents implements Publisher <Object> {
         try {
             final BufferedReader reader = new BufferedReader(new FileReader(selectedFile));
             this.board = FenParser.createGameFromFen(reader.readLine());
-            properties.setProperty("savePath", selectedFile.getAbsolutePath());
-            properties.store(new FileWriter("config/config.properties"), null);
+            Properties.store("savePath", selectedFile.getAbsolutePath());
             reader.close();
 
             this.chessBoard.drawBoard(this.board);
@@ -285,8 +266,7 @@ public class GUI_Contents implements Publisher <Object> {
         try {
             final BufferedWriter bw = new BufferedWriter(new FileWriter(selectedFile));
             bw.write(toSave);
-            properties.setProperty("savePath", selectedFile.getPath());
-            properties.store(new FileWriter("config/config.properties"), null);
+            Properties.store("savePath", selectedFile.getPath());
             bw.close();
         } catch (Exception e) {
             logger.printLog(String.valueOf(e));
@@ -317,66 +297,39 @@ public class GUI_Contents implements Publisher <Object> {
         settingsMenu.add(flip);
         settingsMenu.addSeparator();
 
-        final JCheckBoxMenuItem highlightingLegalMovesToggle = new JCheckBoxMenuItem("Highlight Moves");
-        highlightingLegalMovesToggle.setSelected(highlightLegalMovesActive);
-        highlightingLegalMovesToggle.setFont(frame.getFont());
-        highlightingLegalMovesToggle.addActionListener(highLightLegalMovesAction(highlightingLegalMovesToggle));
+        final JCheckBoxMenuItem legalMovesToggle = new JCheckBoxMenuItem("Highlight Moves");
+        legalMovesToggle.setSelected(highlightLegalMovesActive);
+        legalMovesToggle.setFont(frame.getFont());
+        legalMovesToggle.addActionListener(e -> {
+            highlightLegalMovesActive = legalMovesToggle.isSelected();
+            Properties.store("highlightLegalMovesActive", highlightLegalMovesActive ? "true" : "false");
+            chessBoard.drawBoard(board);
+        });
 
-        final JCheckBoxMenuItem signifyChecksToggle = new JCheckBoxMenuItem("Signify Checks");
-        signifyChecksToggle.setSelected(signifyChecksActive);
-        signifyChecksToggle.setFont(frame.getFont());
-        signifyChecksToggle.addActionListener(signifyChecksAction(signifyChecksToggle));
+        final JCheckBoxMenuItem checksToggle = new JCheckBoxMenuItem("Signify Checks");
+        checksToggle.setSelected(signifyChecksActive);
+        checksToggle.setFont(frame.getFont());
+        checksToggle.addActionListener(e -> {
+            signifyChecksActive = checksToggle.isSelected();
+            Properties.store("signifyChecksActive", signifyChecksActive ? "true" : "false");
+            chessBoard.drawBoard(board);
+        });
 
         final JCheckBoxMenuItem soundToggle = new JCheckBoxMenuItem("Toggle Sound");
         soundToggle.setSelected(soundOn);
         soundToggle.setFont(frame.getFont());
-        soundToggle.addActionListener(soundToggleChecksAction(soundToggle));
+        soundToggle.addActionListener(e -> {
+            soundOn = soundToggle.isSelected();
+            Properties.store("soundOn", soundOn ? "true" : "false");
+            chessBoard.drawBoard(board);
+        });
 
         settingsMenu.add(more);
-        settingsMenu.add(highlightingLegalMovesToggle);
-        settingsMenu.add(signifyChecksToggle);
+        settingsMenu.add(legalMovesToggle);
+        settingsMenu.add(checksToggle);
         settingsMenu.add(soundToggle);
         settingsMenu.setFont(frame.getFont());
         return settingsMenu;
-    }
-
-    public ActionListener highLightLegalMovesAction(JCheckBoxMenuItem m) {
-        return e -> {
-            highlightLegalMovesActive = m.isSelected();
-            properties.setProperty("highlightLegalMovesActive", highlightLegalMovesActive ? "true" : "false");
-            try {
-                properties.store(new FileWriter("config/config.properties"), null);
-            } catch (IOException ex) {
-                logger.printLog(String.valueOf(ex));
-            }
-            chessBoard.drawBoard(board);
-        };
-    }
-
-    public ActionListener signifyChecksAction(JCheckBoxMenuItem m) {
-        return e -> {
-            signifyChecksActive = m.isSelected();
-            properties.setProperty("signifyChecksActive", signifyChecksActive ? "true" : "false");
-            try {
-                properties.store(new FileWriter("config/config.properties"), null);
-            } catch (IOException ex) {
-                logger.printLog(String.valueOf(ex));
-            }
-            chessBoard.drawBoard(board);
-        };
-    }
-
-    public ActionListener soundToggleChecksAction(JCheckBoxMenuItem m) {
-        return e -> {
-            soundOn = m.isSelected();
-            properties.setProperty("soundOn", soundOn ? "true" : "false");
-            try {
-                properties.store(new FileWriter("config/config.properties"), null);
-            } catch (IOException ex) {
-                logger.printLog(String.valueOf(ex));
-            }
-            chessBoard.drawBoard(board);
-        };
     }
 
     /**
@@ -386,15 +339,12 @@ public class GUI_Contents implements Publisher <Object> {
         final JMenu optionsMenu = new JMenu("Options");
         final JMenuItem setupGame = new JMenuItem("Setup Game");
         setupGame.addActionListener(e -> {
-            GUI_Contents.get().getGame().promptUser(GUI_Contents.get().frame);
-            GUI_Contents.get().gameUpdate(GUI_Contents.get().getGame());
+            Chess.get().getGame().promptUser(Chess.get().frame);
+            Chess.get().gameUpdate(Chess.get().getGame());
         });
         setupGame.setFont(frame.getFont());
-
         optionsMenu.add(setupGame);
-
         optionsMenu.setFont(frame.getFont());
-
         return optionsMenu;
     }
 
@@ -430,20 +380,20 @@ public class GUI_Contents implements Publisher <Object> {
         }
 
         private void handleGameEvent (Object ignored) {
-            if (GUI_Contents.get().getGame().isAIPlayer(GUI_Contents.get().getGameBoard().currentPlayer())
-                    && !GUI_Contents.get().getGameBoard().currentPlayer().isInCheckmate()
-                    && !GUI_Contents.get().isDrawByLackOfMaterial()
-                    && !GUI_Contents.get().isDrawByRepetition()) {
+            if (Chess.get().getGame().isAIPlayer(Chess.get().getGameBoard().currentPlayer())
+                    && !Chess.get().getGameBoard().currentPlayer().isInCheckmate()
+                    && !Chess.get().isDrawByLackOfMaterial()
+                    && !Chess.get().isDrawByRepetition()) {
                 // execute the AI
                 final backGroundThreadForAI thread = new backGroundThreadForAI();
                 thread.execute();
 
-                if (GUI_Contents.get().getGameBoard().currentPlayer().isInCheckmate()) {
-                    GUI_Contents.get().logger.printLog("game over, " + GUI_Contents.get().getGameBoard().currentPlayer() + " is in checkmate!");
+                if (Chess.get().getGameBoard().currentPlayer().isInCheckmate()) {
+                    Chess.get().logger.printLog("game over, " + Chess.get().getGameBoard().currentPlayer() + " is in checkmate!");
                 }
 
-                if (GUI_Contents.get().getGameBoard().currentPlayer().isInStalemate()) {
-                    GUI_Contents.get().logger.printLog("game over, " + GUI_Contents.get().getGameBoard().currentPlayer() + " is in stalemate!");
+                if (Chess.get().getGameBoard().currentPlayer().isInStalemate()) {
+                    Chess.get().logger.printLog("game over, " + Chess.get().getGameBoard().currentPlayer() + " is in stalemate!");
                 }
             }
         }
@@ -455,7 +405,7 @@ public class GUI_Contents implements Publisher <Object> {
 
         @Override
         public void onComplete () {
-            GUI_Contents.get().logger.printLog("Game over!");
+            Chess.get().logger.printLog("Game over!");
         }
     }
 
@@ -469,8 +419,8 @@ public class GUI_Contents implements Publisher <Object> {
         @Override
         protected Move doInBackground () {
             //final AI miniMax = new Minimax(GUI_Contents.get().gameDialog.getSearchDepth());
-            final AI alphaBeta = new AlphaBeta(GUI_Contents.get().gameDialog.getSearchDepth());
-            final Move move = alphaBeta.execute(GUI_Contents.get().getGameBoard());
+            final AI alphaBeta = new AlphaBeta(Chess.get().gameDialog.getSearchDepth());
+            final Move move = alphaBeta.execute(Chess.get().getGameBoard());
             if (move.isAttack()) {
                 AudioHandler.playSound(1);
             } else {
@@ -483,15 +433,15 @@ public class GUI_Contents implements Publisher <Object> {
         protected void done () {
             try {
                 final Move executedMove = get();
-                GUI_Contents.get().updateComputerMove(executedMove);
-                GUI_Contents.get().updateGameBoard(GUI_Contents.get().getGameBoard().currentPlayer().makeMove(executedMove).getTransitionBoard());
-                GUI_Contents.get().getMoveLog().addMove(executedMove);
+                Chess.get().updateComputerMove(executedMove);
+                Chess.get().updateGameBoard(Chess.get().getGameBoard().currentPlayer().makeMove(executedMove).getTransitionBoard());
+                Chess.get().getMoveLog().addMove(executedMove);
                 //GUI_Contents.get().getPositionLog().add(FenParser.parseFen(executedMove.getBoard()));
-                GUI_Contents.get().getTakenPieces().refresh(GUI_Contents.get().getMoveLog());
-                GUI_Contents.get().getChessBoard().drawBoard(GUI_Contents.get().getGameBoard());
-                GUI_Contents.get().moveMadeUpdate(PlayerType.COMPUTER);
+                Chess.get().getTakenPieces().refresh(Chess.get().getMoveLog());
+                Chess.get().getChessBoard().drawBoard(Chess.get().getGameBoard());
+                Chess.get().moveMadeUpdate(PlayerType.COMPUTER);
             } catch (Exception e) {
-                GUI_Contents.get().logger.printLog("Execution failed...");
+                Chess.get().logger.printLog("Execution failed...");
             }
             super.done();
         }
@@ -650,7 +600,7 @@ public class GUI_Contents implements Publisher <Object> {
     public enum BoardDirection {
         NORMAL {
             @Override
-            List <GUI_Square> traverse (List <GUI_Square> squares) {
+            List <SquarePanel> traverse (List <SquarePanel> squares) {
                 return squares;
             }
 
@@ -661,8 +611,8 @@ public class GUI_Contents implements Publisher <Object> {
         },
         FLIPPED {
             @Override
-            List <GUI_Square> traverse (List <GUI_Square> squares) {
-                final List <GUI_Square> viewOnly = new ArrayList <>(squares);
+            List <SquarePanel> traverse (List <SquarePanel> squares) {
+                final List <SquarePanel> viewOnly = new ArrayList <>(squares);
                 Collections.reverse(viewOnly);
                 return Collections.unmodifiableList(viewOnly);
             }
@@ -673,7 +623,7 @@ public class GUI_Contents implements Publisher <Object> {
             }
         };
 
-        abstract List <GUI_Square> traverse (final List <GUI_Square> squares);
+        abstract List <SquarePanel> traverse (final List <SquarePanel> squares);
 
         abstract BoardDirection opposite ();
     }
@@ -683,14 +633,14 @@ public class GUI_Contents implements Publisher <Object> {
      */
     private class ChessBoard extends JPanel {
 
-        final List <GUI_Square> boardSquares;
+        final List <SquarePanel> boardSquares;
 
         ChessBoard () {
             super(new GridLayout(8, 8));
             this.boardSquares = new ArrayList <>();
 
             for (int i = 0; i < BoardUtilities.NUM_SQUARES; i++) {
-                final GUI_Square square = new GUI_Square(i);
+                final SquarePanel square = new SquarePanel(i);
                 this.boardSquares.add(square);
                 this.add(square);
             }
@@ -704,7 +654,7 @@ public class GUI_Contents implements Publisher <Object> {
          */
         public void drawBoard (final Board board) {
             removeAll();
-            for (final GUI_Square square : boardDirection.traverse(boardSquares)) {
+            for (final SquarePanel square : boardDirection.traverse(boardSquares)) {
                 square.drawSquare(board);
                 add(square);
             }
@@ -716,29 +666,15 @@ public class GUI_Contents implements Publisher <Object> {
     /**
      * ArrayList of all Moves
      */
-    public static class MoveLog {
-        private final List <Move> moves;
-
-        MoveLog () {
-            this.moves = new ArrayList <>();
-        }
+    public static class MoveLog extends ArrayList<Move> {
 
         public List <Move> getMoves () {
-            return this.moves;
+            return this;
         }
 
         public void addMove (final Move move) {
-            this.moves.add(move);
+            this.add(move);
         }
-
-        public int size () {
-            return this.moves.size();
-        }
-
-        public void clear () {
-            this.moves.clear();
-        }
-
     }
 
     /**
@@ -752,16 +688,20 @@ public class GUI_Contents implements Publisher <Object> {
     /**
      * A single Square on the Board
      */
-    private class GUI_Square extends JPanel {
+    private class SquarePanel extends JPanel {
 
         private final int squareID;
 
-        GUI_Square (final int squareID) {
+        SquarePanel (final int squareID) {
             super(new GridBagLayout());
             this.squareID = squareID;
             this.setPreferredSize(SQUARE_DIMENSION);
             this.setBackground(assignSquareColour());
-            this.assignSquareIcon(board);
+            try {
+                this.assignSquareIcon(board);
+            } catch (Exception e) {
+                logger.printLog(e.toString());
+            }
 
             addMouseListener(createMouseListener());
             validate();
@@ -771,166 +711,155 @@ public class GUI_Contents implements Publisher <Object> {
          * @return MouseListener for managing moves made by user
          */
         private MouseListener createMouseListener () {
-            return new MouseListener() {
+            return new MouseAdapter() {
                 @Override
-                public void mouseClicked (final MouseEvent e) {
+                public void mouseClicked (MouseEvent e) {
                     if (!movingEnabled) {
                         return;
                     }
                     if (isLeftMouseButton(e)) {
-                        // first Click
                         if (sourceSquare == null) {
-                            sourceSquare = board.getSquare(squareID);
-                            movedPiece = sourceSquare.getPiece();
-                            // if clicked on empty square, do nothing
-                            if (movedPiece == null) {
-                                sourceSquare = null;
-                            } else if (movedPiece.getPieceTeam() != board.currentPlayer().getTeam()) {
-                                sourceSquare = null;
-                            }
-                        } else { // second Click
-                            destinationSquare = board.getSquare(squareID);
-                            // if same square is clicked, reset
-                            if (sourceSquare == destinationSquare) {
-                                sourceSquare = null;
-                                destinationSquare = null;
-                                movedPiece = null;
-                                SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
-                                return;
-                            }
-                            // if the square that is clicked has the same color piece on it
-                            // , it will jump into that square clicked -> quality of Life
-                            if (!(destinationSquare instanceof Square.EmptySquare) && destinationSquare.getPiece().getPieceTeam() == movedPiece.getPieceTeam()) {
-                                sourceSquare = board.getSquare(squareID);
-                                movedPiece = sourceSquare.getPiece();
-                                destinationSquare = null;
-                                SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
-                                return;
-                            }
-                            if (destinationSquare.equals(sourceSquare)) {
-                                sourceSquare = null;
-                                destinationSquare = null;
-                                SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
-                                return;
-                            }
-                            final Move move;
-                            if (movedPiece.getPieceTeam().isPawnPromotionSquare(destinationSquare.getSquareCoordinate())
-                                    && movedPiece instanceof Pawn
-                                    && movedPiece.getPieceTeam().isAboutToPromoteSquare(movedPiece.getPiecePosition())) {
-
-                                final PromotionDialog pD = new PromotionDialog(frame, movedPiece.getPieceTeam());
-                                final Piece promotionPiece;
-                                if (pD.getSelectedPieceType() == PieceType.QUEEN) {
-                                    promotionPiece = new Queen(movedPiece.getPiecePosition()
-                                            , movedPiece.getPieceTeam()
-                                            , false);
-                                } else if (pD.getSelectedPieceType() == PieceType.ROOK) {
-                                    promotionPiece = new Rook(movedPiece.getPiecePosition()
-                                            , movedPiece.getPieceTeam()
-                                            , false);
-                                } else if (pD.getSelectedPieceType() == PieceType.BISHOP) {
-                                    promotionPiece = new Bishop(movedPiece.getPiecePosition()
-                                            , movedPiece.getPieceTeam()
-                                            , false);
-                                } else if (pD.getSelectedPieceType() == PieceType.KNIGHT) {
-                                    promotionPiece = new Knight(movedPiece.getPiecePosition()
-                                            , movedPiece.getPieceTeam()
-                                            , false);
-                                } else {
-                                    // if it is "X"d away
-                                    sourceSquare = null;
-                                    destinationSquare = null;
-                                    movedPiece = null;
-                                    return;
-                                }
-                                move = new PawnPromotion(
-                                        new PawnMove(board, movedPiece, destinationSquare.getSquareCoordinate()), promotionPiece);
-                            } else {
-                                move = Move.MoveFactory.createMove(board
-                                        , sourceSquare.getSquareCoordinate()
-                                        , destinationSquare.getSquareCoordinate());
-                            }
-                            final MoveTransition transition = board.currentPlayer().makeMove(move);
-                            if (transition.getMoveStatus().isDone()) {
-                                if (move.isAttack()) {
-                                    AudioHandler.playSound(1);
-                                } else if (transition.getTransitionBoard().blackPlayer().isInCheckmate()
-                                        || transition.getTransitionBoard().whitePlayer().isInCheckmate()) {
-                                    AudioHandler.playSound(2);
-                                } else {
-                                    AudioHandler.playSound(0);
-                                }
-                                currentMove++;
-                                board = transition.getTransitionBoard();
-                                moveLog.addMove(move);
-                                positionLog.add(FenParser.parseFen(transition.getTransitionBoard()));
-                            }
-                            sourceSquare = null;
-                            destinationSquare = null;
-                            movedPiece = null;
+                            firstClick();
+                        } else {
+                            secondClick();
                         }
                         SwingUtilities.invokeLater(() -> {
                             takenPieces.refresh(moveLog);
                             chessBoard.drawBoard(board);
                             if (gameDialog.isAIPlayer(board.currentPlayer())) {
-                                GUI_Contents.get().moveMadeUpdate(PlayerType.HUMAN);
+                                Chess.get().moveMadeUpdate(PlayerType.HUMAN);
                             }
                         });
-                    } else if (isLeftMouseButton(e)) {
+                    } else if (isRightMouseButton(e)) {
                         sourceSquare = null;
                         destinationSquare = null;
                         movedPiece = null;
                         SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
                     }
                 }
+                private void firstClick() {
+                    sourceSquare = board.getSquare(squareID);
+                    movedPiece = sourceSquare.getPiece();
+                    // if clicked on empty square, do nothing
+                    if (movedPiece == null) {
+                        sourceSquare = null;
+                    } else if (movedPiece.getPieceTeam() != board.currentPlayer().getTeam()) {
+                        sourceSquare = null;
+                    }
+                }
 
-                @Override
-                public void mousePressed (final MouseEvent e) {}
-                @Override
-                public void mouseReleased (final MouseEvent e) {}
-                @Override
-                public void mouseEntered (final MouseEvent e) {}
-                @Override
-                public void mouseExited (final MouseEvent e) {}
+                private void secondClick() {
+                    destinationSquare = board.getSquare(squareID);
+                    // if same square is clicked, reset
+                    if (sourceSquare == destinationSquare) {
+                        sourceSquare = null;
+                        destinationSquare = null;
+                        movedPiece = null;
+                        SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
+                        return;
+                    }
+                    // if the square that is clicked has the same color piece on it
+                    // , it will jump into that square clicked -> quality of Life
+                    if (!(destinationSquare instanceof Square.EmptySquare) && destinationSquare.getPiece().getPieceTeam() == movedPiece.getPieceTeam()) {
+                        sourceSquare = board.getSquare(squareID);
+                        movedPiece = sourceSquare.getPiece();
+                        destinationSquare = null;
+                        SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
+                        return;
+                    }
+                    if (destinationSquare.equals(sourceSquare)) {
+                        sourceSquare = null;
+                        destinationSquare = null;
+                        SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
+                        return;
+                    }
+                    final Move move;
+                    if (movedPiece.getPieceTeam().isPawnPromotionSquare(destinationSquare.getSquareCoordinate())
+                            && movedPiece instanceof Pawn
+                            && movedPiece.getPieceTeam().isAboutToPromoteSquare(movedPiece.getPosition())) {
+
+                        final PromotionDialog pD = new PromotionDialog(frame, movedPiece.getPieceTeam());
+                        final Piece promotionPiece;
+                        if (pD.getSelectedPieceType() == PieceType.QUEEN) {
+                            promotionPiece = new Queen(movedPiece.getPosition()
+                                    , movedPiece.getPieceTeam()
+                                    , false);
+                        } else if (pD.getSelectedPieceType() == PieceType.ROOK) {
+                            promotionPiece = new Rook(movedPiece.getPosition()
+                                    , movedPiece.getPieceTeam()
+                                    , false);
+                        } else if (pD.getSelectedPieceType() == PieceType.BISHOP) {
+                            promotionPiece = new Bishop(movedPiece.getPosition()
+                                    , movedPiece.getPieceTeam()
+                                    , false);
+                        } else if (pD.getSelectedPieceType() == PieceType.KNIGHT) {
+                            promotionPiece = new Knight(movedPiece.getPosition()
+                                    , movedPiece.getPieceTeam()
+                                    , false);
+                        } else {
+                            // if it is "X"d away
+                            sourceSquare = null;
+                            destinationSquare = null;
+                            movedPiece = null;
+                            return;
+                        }
+                        move = new PawnPromotion(
+                                new PawnMove(board, movedPiece, destinationSquare.getSquareCoordinate()), promotionPiece);
+                    } else {
+                        move = Move.MoveFactory.createMove(board
+                                , sourceSquare.getSquareCoordinate()
+                                , destinationSquare.getSquareCoordinate());
+                    }
+                    final MoveTransition transition = board.currentPlayer().makeMove(move);
+                    if (transition.getMoveStatus().isDone()) {
+                        if (move.isAttack()) {
+                            AudioHandler.playSound(1);
+                        } else if (transition.getTransitionBoard().blackPlayer().isInCheckmate()
+                                || transition.getTransitionBoard().whitePlayer().isInCheckmate()) {
+                            AudioHandler.playSound(2);
+                        } else {
+                            AudioHandler.playSound(0);
+                        }
+                        currentMove++;
+                        board = transition.getTransitionBoard();
+                        moveLog.addMove(move);
+                        positionLog.add(FenParser.parseFen(transition.getTransitionBoard()));
+                    }
+                    sourceSquare = null;
+                    destinationSquare = null;
+                    movedPiece = null;
+                }
             };
         }
 
         /**
          * @param board to get the Piece that is on the Square to generate an image
          */
-        private void assignSquareIcon (final Board board) {
+        private void assignSquareIcon (final Board board) throws Exception {
             this.removeAll();
             if (board.getSquare(this.squareID).isOccupied()) {
-                try {
-                    final BufferedImage image = ImageIO.read(new File(
-                            artPath + board.getSquare(this.squareID)
-                                    .getPiece().getPieceTeam().toString()
-                                    .charAt(0) + board.getSquare(this.squareID)
-                                    .getPiece().toString() + ".png")
-                    );
-                    add(new JLabel(new ImageIcon(image.getScaledInstance
-                            (CHESS_BOARD_DIMENSION.width/15, CHESS_BOARD_DIMENSION.height/8, 0))));
-
-                } catch (IOException e) {
-                    logger.printLog(String.valueOf(e));
-                }
+                final BufferedImage image = ImageIO.read(new File(
+                        artPath + board.getSquare(this.squareID)
+                                .getPiece().getPieceTeam().toString()
+                                .charAt(0) + board.getSquare(this.squareID)
+                                .getPiece().toString() + ".png")
+                );
+                add(new JLabel(new ImageIcon(image.getScaledInstance
+                        (CHESS_BOARD_DIMENSION.width/15, CHESS_BOARD_DIMENSION.height/8, 0))));
             }
         }
 
         /**
          * @param board to highlight all the legal moves on the board
          */
-        private void highlightLegalMoves (final Board board) {
+        private void highlightLegalMoves (final Board board) throws Exception {
             if (highlightLegalMovesActive) {
                 for (final Move move : pieceLegalMoves(board)) {
-                    if (move.getDestinationCoordinate() == squareID) {
-                        try {
-                            add(new JLabel(new ImageIcon(ImageIO.read(new File(miscPath + "highlighting.png"))
-                                    .getScaledInstance(25, 25, 0))));
-                        } catch (Exception e) {
-                            logger.printLog(String.valueOf(e));
-                        }
+                    if (move.getDestinationCoordinate() != squareID) {
+                        continue;
                     }
+                    add(new JLabel(new ImageIcon(ImageIO.read(new File(miscPath + "highlighting.png"))
+                            .getScaledInstance(25, 25, 0))));
                 }
             }
         }
@@ -973,32 +902,32 @@ public class GUI_Contents implements Publisher <Object> {
                 if (!board.blackPlayer().isInCheckmate()) {
                     red = red.brighter();
                 }
-                if (board.blackPlayer().getPlayerKing().getPiecePosition() == this.squareID) {
+                if (board.blackPlayer().getPlayerKing().getPosition() == this.squareID) {
                     this.setBackground(red);
                 }
             } else if (board.whitePlayer().isInCheck()) {
                 if (!board.whitePlayer().isInCheckmate()) {
                     red = red.brighter();
                 }
-                if (board.whitePlayer().getPlayerKing().getPiecePosition() == this.squareID) {
+                if (board.whitePlayer().getPlayerKing().getPosition() == this.squareID) {
                     this.setBackground(red);
                 }
             } else if (board.blackPlayer().isInStalemate()) {
-                if (board.blackPlayer().getPlayerKing().getPiecePosition() == this.squareID) {
+                if (board.blackPlayer().getPlayerKing().getPosition() == this.squareID) {
                     this.setBackground(Color.GRAY);
                 }
             } else if (board.whitePlayer().isInStalemate()) {
-                if (board.whitePlayer().getPlayerKing().getPiecePosition() == this.squareID) {
+                if (board.whitePlayer().getPlayerKing().getPosition() == this.squareID) {
                     this.setBackground(Color.GRAY);
                 }
             } else if (isDrawByLackOfMaterial()) {
-                if (board.whitePlayer().getPlayerKing().getPiecePosition() == this.squareID
-                        || board.blackPlayer().getPlayerKing().getPiecePosition() == this.squareID) {
+                if (board.whitePlayer().getPlayerKing().getPosition() == this.squareID
+                        || board.blackPlayer().getPlayerKing().getPosition() == this.squareID) {
                     this.setBackground(Color.GRAY);
                 }
             } else if (isDrawByRepetition()) {
-                if (board.whitePlayer().getPlayerKing().getPiecePosition() == this.squareID
-                        || board.blackPlayer().getPlayerKing().getPiecePosition() == this.squareID) {
+                if (board.whitePlayer().getPlayerKing().getPosition() == this.squareID
+                        || board.blackPlayer().getPlayerKing().getPosition() == this.squareID) {
                     this.setBackground(Color.GRAY);
                 }
             }
@@ -1008,18 +937,13 @@ public class GUI_Contents implements Publisher <Object> {
          * @return the Color of the Square
          */
         private Color assignSquareColour () {
-            if (BoardUtilities.FIRST_ROW[this.squareID]
+            return BoardUtilities.FIRST_ROW[this.squareID]
                     || BoardUtilities.THIRD_ROW[this.squareID]
                     || BoardUtilities.FIFTH_ROW[this.squareID]
-                    || BoardUtilities.SEVENTH_ROW[this.squareID]) {
-                return (this.squareID % 2 == 0 ? colorPack.dark() : colorPack.light());
-            } else if (BoardUtilities.SECOND_ROW[this.squareID]
-                    || BoardUtilities.FOURTH_ROW[this.squareID]
-                    || BoardUtilities.SIXTH_ROW[this.squareID]
-                    || BoardUtilities.EIGHTH_ROW[this.squareID]) {
-                return (this.squareID % 2 != 0 ? colorPack.dark() : colorPack.light());
-            }
-            throw new ChessException("Square is off the bounds of the board.");
+                    || BoardUtilities.SEVENTH_ROW[this.squareID]
+
+                    ? (this.squareID % 2 == 0 ? colorPack.dark() : colorPack.light())
+                    : (this.squareID % 2 != 0 ? colorPack.dark() : colorPack.light());
         }
 
         /**
@@ -1027,8 +951,12 @@ public class GUI_Contents implements Publisher <Object> {
          */
         public void drawSquare (final Board board) {
             setBackground(assignSquareColour());
-            assignSquareIcon(board);
-            highlightLegalMoves(board);
+            try {
+                assignSquareIcon(board);
+                highlightLegalMoves(board);
+            } catch (Exception e) {
+                logger.printLog(e.toString());
+            }
             signifyCheck(board);
             validate();
             repaint();

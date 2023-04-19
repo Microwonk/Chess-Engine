@@ -1,29 +1,32 @@
-package net.chess.gui;
+package net.chess.gui.util;
+
+import net.chess.gui.audio.AudioHandler;
 
 import java.awt.*;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
-import java.util.Properties;
 
-public class PropertyVars {
+public class Properties {
 
     //TODO: let user change .properties in settings menu -> properties profiles and so on
 
     //config variables
-    protected static final List <ColorPack> defaultColorPacks = List.of(
+    public static final List <ColorPack> defaultColorPacks = List.of(
             new ColorPack(new Color(196, 189, 175), new Color(155, 132, 75), "Default"),
             new ColorPack(new Color(255, 100, 100), new Color(100, 20, 20), "Red"),
             new ColorPack(new Color(200, 10, 200), new Color(90, 10, 90), "Purple")
     );
-    protected static Properties properties = new Properties();
-    protected static String artPath;
-    protected static String miscPath;
-    protected static boolean highlightLegalMovesActive;
-    protected static String savePath;
-    protected static boolean signifyChecksActive;
+    public static java.util.Properties properties = new java.util.Properties();
+    public static String artPath;
+    public static String miscPath;
+    public static boolean highlightLegalMovesActive;
+    public static String savePath;
+    public static boolean signifyChecksActive;
     public static boolean soundOn;
-    protected static ColorPack colorPack;
+    public static ColorPack colorPack;
+    public static float volume;
 
     static {
         try {
@@ -38,10 +41,20 @@ public class PropertyVars {
         highlightLegalMovesActive = properties.getProperty("highlightLegalMovesActive").equals("true");
         soundOn = properties.getProperty("soundOn").equals("true");
         colorPack = getPackByName(properties.getProperty("colorPack"));
+        volume = Float.parseFloat(properties.getProperty("volume"));
+    }
+
+    public static void store(String key, String value) {
+        try {
+            properties.setProperty(key, value);
+            properties.store(new FileWriter("config/config.properties"), null);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static void init () {
-        // not inited yet GUI_Contents.get().getLogger().printLog("Initialized variables");
+        AudioHandler.setSystemVolume(volume);
     }
 
     public static ColorPack getPackByName(String name) {

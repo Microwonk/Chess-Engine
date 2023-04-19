@@ -1,22 +1,24 @@
 package net.chess.gui;
 
+import net.chess.gui.audio.AudioHandler;
+import net.chess.gui.util.Properties;
+
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.FileWriter;
-import java.io.IOException;
-
-import static net.chess.gui.PropertyVars.*;
 
 // TODO : A LOT
 
-public class SettingsDialog extends JDialog implements ActionListener {
+public class SettingsDialog extends JDialog implements ActionListener, ChangeListener {
 
     private JButton chooseFileButton;
     private JTextField filePathField;
     private JComboBox <String> colorChooser;
+    private JSlider volumeSlider;
 
     public SettingsDialog (JFrame parent) {
         super(parent, "Settings", true);
@@ -36,36 +38,17 @@ public class SettingsDialog extends JDialog implements ActionListener {
 
         // Create color chooser components
         colorChooser = new JComboBox<>();
-        PropertyVars.defaultColorPacks.forEach(c -> colorChooser.addItem(c.name()));
+        Properties.defaultColorPacks.forEach(c -> colorChooser.addItem(c.name()));
         JPanel colorChooserPanel = new JPanel(new FlowLayout());
         colorChooserPanel.add(new JLabel("Color: "));
         colorChooserPanel.add(colorChooser);
 
-        // Create checkbox components
-        final JCheckBoxMenuItem highlightingLegalMovesToggle = new JCheckBoxMenuItem("Highlight Moves");
-        highlightingLegalMovesToggle.setSelected(highlightLegalMovesActive);
-        highlightingLegalMovesToggle.addActionListener(GUI_Contents.get().highLightLegalMovesAction(highlightingLegalMovesToggle));
+        volumeSlider = new JSlider(JSlider.HORIZONTAL, 0, 100, (int)(Properties.volume * 100));
+        volumeSlider.addChangeListener(this);
 
-
-        final JCheckBoxMenuItem signifyChecksToggle = new JCheckBoxMenuItem("Signify Checks");
-        signifyChecksToggle.setSelected(signifyChecksActive);
-        signifyChecksToggle.addActionListener(GUI_Contents.get().signifyChecksAction(signifyChecksToggle));
-
-
-        final JCheckBoxMenuItem soundToggle = new JCheckBoxMenuItem("Toggle Sound");
-        soundToggle.setSelected(soundOn);
-        soundToggle.addActionListener(GUI_Contents.get().soundToggleChecksAction(signifyChecksToggle));
-        JPanel checkBoxPanel = new JPanel(new GridLayout(1, 3));
-        checkBoxPanel.add(highlightingLegalMovesToggle);
-        checkBoxPanel.add(signifyChecksToggle);
-        checkBoxPanel.add(soundToggle);
-
-        // Add components to dialog
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.add(fileChooserPanel, BorderLayout.NORTH);
-        mainPanel.add(colorChooserPanel, BorderLayout.CENTER);
-        mainPanel.add(checkBoxPanel, BorderLayout.SOUTH);
-        add(mainPanel);
+        this.add(fileChooserPanel, BorderLayout.EAST);
+        this.add(colorChooserPanel, BorderLayout.NORTH);
+        this.add(volumeSlider, BorderLayout.SOUTH);
     }
 
     @Override
@@ -78,6 +61,15 @@ public class SettingsDialog extends JDialog implements ActionListener {
             if (returnVal == JFileChooser.APPROVE_OPTION) {
                 filePathField.setText(fileChooser.getSelectedFile().getPath());
             }
+        }
+    }
+
+    @Override
+    public void stateChanged (ChangeEvent e) {
+        JSlider source = (JSlider) e.getSource();
+        if (!source.getValueIsAdjusting()) {
+            AudioHandler.setSystemVolume(source.getValue() / 100f);
+            Properties.store("volume", String.valueOf(source.getValue() / 100f));
         }
     }
 }

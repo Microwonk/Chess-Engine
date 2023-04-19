@@ -14,7 +14,7 @@ import java.util.List;
 import static net.chess.engine.board.Move.MajorAttackMove;
 import static net.chess.engine.board.Move.MajorMove;
 
-public class Knight extends Piece {
+public final class Knight extends Piece {
     // 8 kandidaten der Moves eines Knights
     private final static int[] POSSIBLE_MOVE_COORDINATES = {-17, -15, -10, -6, 6, 10, 15, 17};
 
@@ -23,7 +23,7 @@ public class Knight extends Piece {
     }
 
     public Knight (final int piecePosition, final Team pieceTeam, final boolean isFirstMove) {
-        super (piecePosition, pieceTeam, PieceType.ROOK, isFirstMove);
+        super (piecePosition, pieceTeam, PieceType.KNIGHT, isFirstMove);
     }
 
     @Override
@@ -62,7 +62,9 @@ public class Knight extends Piece {
 
     @Override
     public Knight movePiece (Move move) {
-        return new Knight (move.getDestinationCoordinate (), move.getPiece ().getPieceTeam (), false);
+        return move.getPiece().getPieceTeam() == Team.WHITE ?
+                BoardUtilities.cachedWhiteKnights[move.getDestinationCoordinate()]
+                : BoardUtilities.cachedBlackKnights[move.getDestinationCoordinate()];
     }
 
     private static boolean isFirstColumnExclusion (final int currentPosition, final int candidateOffset) {

@@ -1,7 +1,7 @@
 package net.chess;
 
 import com.formdev.flatlaf.FlatDarkLaf;
-import net.chess.gui.GUI_Contents;
+import net.chess.gui.Chess;
 
 import javax.swing.*;
 
@@ -20,6 +20,6 @@ public class Main {
             e.printStackTrace();
         }
         JFrame.setDefaultLookAndFeelDecorated(false);
-        GUI_Contents.get().show();
+        Chess.get().show();
     }
 }

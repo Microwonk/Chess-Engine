@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import static net.chess.gui.PropertyVars.artPath;
+import static net.chess.gui.util.Properties.artPath;
 
 /**
  * JPanel to represent the Taken Pieces in one Game
@@ -39,7 +39,7 @@ public class TakenPieces extends JPanel {
      * @param moveLog passed in to look for Attacking Moves
      *                , which have an attacked Piece -> so it will be a "Taken Piece"
      */
-    public void refresh (final GUI_Contents.MoveLog moveLog) {
+    public void refresh (final Chess.MoveLog moveLog) {
         this.EAST.removeAll();
         this.WEST.removeAll();
 

@@ -5,7 +5,7 @@ import net.chess.ai.Evaluator;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.Move;
 import net.chess.engine.player.MoveTransition;
-import net.chess.gui.GUI_Contents;
+import net.chess.gui.Chess;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +65,7 @@ public class AlphaBetaMultiThreaded implements AI {
             e.printStackTrace ();
         }
 
-        GUI_Contents.get().getLogger().printLog("Best Move: " + bestMove
+        Chess.get().getLogger().printLog("Best Move: " + bestMove
                 , "Evaluation: " + highestSeenValue
                 , "Color: " + board.currentPlayer());
         return bestMove.get ();

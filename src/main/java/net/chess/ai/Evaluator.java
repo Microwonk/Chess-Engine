@@ -5,9 +5,8 @@ import net.chess.engine.board.Board;
 import net.chess.engine.board.BoardUtilities;
 import net.chess.engine.pieces.Pawn;
 import net.chess.engine.pieces.Piece;
-import net.chess.gui.GUI_Contents;
+import net.chess.gui.Chess;
 
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.chess.engine.pieces.Piece.PieceType;
@@ -44,8 +43,8 @@ public class Evaluator {
             } else {
                 score += WINNING_SCORE;
             }
-        } else if (GUI_Contents.get().isDrawByLackOfMaterial() || GUI_Contents.get().isDrawByRepetition()) {
-            if (GUI_Contents.get().getGameBoard().isGameOverStaleMate()) {
+        } else if (Chess.get().isDrawByLackOfMaterial() || Chess.get().isDrawByRepetition()) {
+            if (Chess.get().getGameBoard().isGameOverStaleMate()) {
                 score = DRAW_SCORE;
             }
         }
@@ -72,7 +71,7 @@ public class Evaluator {
     }
 
     private static int evaluateKingSafety (final Board board) {
-        final int currentPlayerKingPosition = board.currentPlayer().getPlayerKing().getPiecePosition();
+        final int currentPlayerKingPosition = board.currentPlayer().getPlayerKing().getPosition();
 
         // Check if the king is in check
         if (board.currentPlayer().isInCheck()) {
@@ -97,11 +96,11 @@ public class Evaluator {
         // Count number of pieces on central squares
         for (final Piece piece : board.currentPlayer().getActivePieces()) {
             if (piece instanceof Pawn) {
-                if (BoardUtilities.IS_CENTRAL[piece.getPiecePosition()]) {
+                if (BoardUtilities.IS_CENTRAL[piece.getPosition()]) {
                     centerControlBonus += CENTRAL_PAWN_BONUS;
                 }
             } else {
-                if (BoardUtilities.IS_CENTRAL[piece.getPiecePosition()]) {
+                if (BoardUtilities.IS_CENTRAL[piece.getPosition()]) {
                     centerControlBonus += CENTRAL_PIECE_BONUS;
                 }
             }
@@ -124,7 +123,7 @@ public class Evaluator {
 
         for (final Piece pawn : board.currentPlayer().getActivePawns()) {
             if (isPassedPawn(pawn)) {
-                if (BoardUtilities.getAttackCount(board.currentPlayer().getOpponent().getLegalMoves(), pawn.getPiecePosition()) == 0) {
+                if (BoardUtilities.getAttackCount(board.currentPlayer().getOpponent().getLegalMoves(), pawn.getPosition()) == 0) {
                     // Passed pawn is not under attack
                     if (pawn.getPieceTeam().isWhite()) {
                         whitePassedPawns++;
@@ -146,7 +145,7 @@ public class Evaluator {
         int isolatedPawns = 0;
 
         for (final Piece pawn : board.currentPlayer().getActivePawns()) {
-            if (!isConnectedPawnChain(board, pawn.getPiecePosition(), pawn.getPieceTeam()) && !hasNeighboringPawns(pawn, board)) {
+            if (!isConnectedPawnChain(board, pawn.getPosition(), pawn.getPieceTeam()) && !hasNeighboringPawns(pawn, board)) {
                 isolatedPawns++;
             }
         }
@@ -154,11 +153,11 @@ public class Evaluator {
     }
 
     private static boolean hasNeighboringPawns (final Piece pawn, final Board board) {
-        final int pawnFile = pawn.getPiecePosition() % 8;
+        final int pawnFile = pawn.getPosition() % 8;
 
         // Check for neighboring pawns on the same file
         for (final Piece otherPawn : board.currentPlayer().getActivePawns()) {
-            if (otherPawn.getPiecePosition() % 8 == pawnFile && otherPawn != pawn) {
+            if (otherPawn.getPosition() % 8 == pawnFile && otherPawn != pawn) {
                 return true;
             }
         }
@@ -168,7 +167,7 @@ public class Evaluator {
         for (final int file : adjacentFiles) {
             if (file >= 0 && file < 8) {
                 for (final Piece otherPawn : board.currentPlayer().getActivePawns()) {
-                    if (otherPawn.getPiecePosition() % 8 == file) {
+                    if (otherPawn.getPosition() % 8 == file) {
                         return true;
                     }
                 }
@@ -182,21 +181,21 @@ public class Evaluator {
         int doubledPawnCount = 0;
         final int[] fileCount = new int[8];
         for (final Piece pawn : board.currentPlayer().getActivePawns()) {
-            if (BoardUtilities.FIRST_COLUMN[pawn.getPiecePosition()]) {
+            if (BoardUtilities.FIRST_COLUMN[pawn.getPosition()]) {
                 fileCount[0]++;
-            } else if (BoardUtilities.SECOND_COLUMN[pawn.getPiecePosition()]) {
+            } else if (BoardUtilities.SECOND_COLUMN[pawn.getPosition()]) {
                 fileCount[1]++;
-            } else if (BoardUtilities.THIRD_COLUMN[pawn.getPiecePosition()]) {
+            } else if (BoardUtilities.THIRD_COLUMN[pawn.getPosition()]) {
                 fileCount[2]++;
-            } else if (BoardUtilities.FOURTH_COLUMN[pawn.getPiecePosition()]) {
+            } else if (BoardUtilities.FOURTH_COLUMN[pawn.getPosition()]) {
                 fileCount[3]++;
-            } else if (BoardUtilities.FIFTH_COLUMN[pawn.getPiecePosition()]) {
+            } else if (BoardUtilities.FIFTH_COLUMN[pawn.getPosition()]) {
                 fileCount[4]++;
-            } else if (BoardUtilities.SIXTH_COLUMN[pawn.getPiecePosition()]) {
+            } else if (BoardUtilities.SIXTH_COLUMN[pawn.getPosition()]) {
                 fileCount[5]++;
-            } else if (BoardUtilities.SEVENTH_COLUMN[pawn.getPiecePosition()]) {
+            } else if (BoardUtilities.SEVENTH_COLUMN[pawn.getPosition()]) {
                 fileCount[6]++;
-            } else if (BoardUtilities.EIGHTH_COLUMN[pawn.getPiecePosition()]) {
+            } else if (BoardUtilities.EIGHTH_COLUMN[pawn.getPosition()]) {
                 fileCount[7]++;
             }
         }
@@ -214,10 +213,10 @@ public class Evaluator {
         int advancedPawnChainCount = 0;
 
         for (final Piece pawn : board.currentPlayer().getActivePawns()) {
-            final int pawnRank = pawn.getPiecePosition() / 8;
+            final int pawnRank = pawn.getPosition() / 8;
 
             // Check for pawn chains
-            if (isPawnChain(board, pawn.getPiecePosition(), pawn.getPieceTeam())) {
+            if (isPawnChain(board, pawn.getPosition(), pawn.getPieceTeam())) {
                 pawnChainCount++;
                 if (pawnRank >= 4) {
                     advancedPawnChainCount++;
@@ -225,7 +224,7 @@ public class Evaluator {
             }
 
             // Check for connected pawn chains
-            if (isConnectedPawnChain(board, pawn.getPiecePosition(), pawn.getPieceTeam())) {
+            if (isConnectedPawnChain(board, pawn.getPosition(), pawn.getPieceTeam())) {
                 connectedPawnChainCount++;
             }
         }

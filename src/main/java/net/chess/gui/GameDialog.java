@@ -6,7 +6,7 @@ import net.chess.engine.player.Player;
 import javax.swing.*;
 import java.awt.*;
 
-import static net.chess.gui.GUI_Contents.PlayerType;
+import static net.chess.gui.Chess.PlayerType;
 
 public class GameDialog extends JDialog {
 
@@ -54,8 +54,8 @@ public class GameDialog extends JDialog {
         final JButton okButton = new JButton("OK");
 
         okButton.addActionListener(e -> {
-            whitePlayerType = whiteComputerButton.isSelected() ? GUI_Contents.PlayerType.COMPUTER : GUI_Contents.PlayerType.HUMAN;
-            blackPlayerType = blackComputerButton.isSelected() ? GUI_Contents.PlayerType.COMPUTER : GUI_Contents.PlayerType.HUMAN;
+            whitePlayerType = whiteComputerButton.isSelected() ? Chess.PlayerType.COMPUTER : Chess.PlayerType.HUMAN;
+            blackPlayerType = blackComputerButton.isSelected() ? Chess.PlayerType.COMPUTER : Chess.PlayerType.HUMAN;
             GameDialog.this.setVisible(false);
         });
         cancelButton.addActionListener(e -> {
@@ -78,16 +78,16 @@ public class GameDialog extends JDialog {
 
     boolean isAIPlayer (final Player player) {
         if (player.getTeam() == Team.WHITE) {
-            return getWhitePlayerType() == GUI_Contents.PlayerType.COMPUTER;
+            return getWhitePlayerType() == Chess.PlayerType.COMPUTER;
         }
-        return getBlackPlayerType() == GUI_Contents.PlayerType.COMPUTER;
+        return getBlackPlayerType() == Chess.PlayerType.COMPUTER;
     }
 
-    GUI_Contents.PlayerType getWhitePlayerType () {
+    Chess.PlayerType getWhitePlayerType () {
         return this.whitePlayerType;
     }
 
-    GUI_Contents.PlayerType getBlackPlayerType () {
+    Chess.PlayerType getBlackPlayerType () {
         return this.blackPlayerType;
     }
 

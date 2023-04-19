@@ -1,10 +1,11 @@
 package net.chess.engine.board;
 
+import net.chess.engine.Team;
+import net.chess.engine.pieces.*;
 import net.chess.exception.ChessException;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.lang.reflect.Array;
+import java.util.*;
 
 /**
  * Utilities for Comfort
@@ -16,6 +17,39 @@ public class BoardUtilities {
 
     private BoardUtilities() {
         throw new RuntimeException("don't do this");
+    }
+
+    // cached Pieces
+    public static Pawn[] cachedWhitePawns;
+    public static Pawn[] cachedBlackPawns;
+    public static King[] cachedWhiteKings;
+    public static King[] cachedBlackKings;
+    public static Queen[] cachedWhiteQueens;
+    public static Queen[] cachedBlackQueens;
+    public static Bishop[] cachedWhiteBishops;
+    public static Bishop[] cachedBlackBishops;
+    public static Rook[] cachedWhiteRooks;
+    public static Rook[] cachedBlackRooks;
+    public static Knight[] cachedWhiteKnights;
+    public static Knight[] cachedBlackKnights;
+
+    static {
+        try {
+            cachedWhitePawns = genPieces(Pawn.class,Team.WHITE);
+            cachedBlackPawns = genPieces(Pawn.class, Team.BLACK);
+            cachedWhiteKings = genPieces(King.class,Team.WHITE);
+            cachedBlackKings = genPieces(King.class, Team.BLACK);
+            cachedWhiteQueens = genPieces(Queen.class,Team.WHITE);
+            cachedBlackQueens = genPieces(Queen.class, Team.BLACK);
+            cachedWhiteBishops = genPieces(Bishop.class,Team.WHITE);
+            cachedBlackBishops = genPieces(Bishop.class, Team.BLACK);
+            cachedWhiteRooks = genPieces(Rook.class,Team.WHITE);
+            cachedBlackRooks = genPieces(Rook.class, Team.BLACK);
+            cachedWhiteKnights = genPieces(Knight.class,Team.WHITE);
+            cachedBlackKnights = genPieces(Knight.class, Team.BLACK);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // to see if a coordinate is on a specific column/file
@@ -148,5 +182,13 @@ public class BoardUtilities {
         } else {
             throw new ChessException("Piece is Off Board");
         }
+    }
+
+    public static <T extends Piece> T[] genPieces(Class<T> type, Team team) throws Exception {
+        T[] pieces = (T[]) Array.newInstance(type, NUM_SQUARES);
+        for (int i = 0; i < NUM_SQUARES; i++) {
+            pieces[i] = type.getDeclaredConstructor(int.class, Team.class).newInstance(i, team);
+        }
+        return pieces;
     }
 }

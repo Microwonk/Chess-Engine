@@ -24,7 +24,7 @@ public class FenParser {
             } catch(Exception e) {
                 final Piece p = createPieceFromFen(current.charAt(0), i, splitter, emptyCount);
                 if (p instanceof Pawn && !splitter[3].equals("-")) {
-                    if (p.getPiecePosition() == (BoardUtilities.MAPPING_TO_POS.get(splitter[3]))) {
+                    if (p.getPosition() == (BoardUtilities.MAPPING_TO_POS.get(splitter[3]))) {
                         builder.setEnPassantPawn((Pawn) p);
                     }
                 }
@@ -73,7 +73,7 @@ public class FenParser {
     private static String enPassantSquare (final Board board) {
         final Pawn enPassantPawn = board.getEnPassantPawn();
         if (enPassantPawn != null) {
-            return BoardUtilities.getPositionAtCoordinate(enPassantPawn.getPiecePosition()
+            return BoardUtilities.getPositionAtCoordinate(enPassantPawn.getPosition()
                     + (8) * (-enPassantPawn.getPieceTeam().getDirection()));
         }
         return "-";

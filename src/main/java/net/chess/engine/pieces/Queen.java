@@ -4,17 +4,10 @@ import net.chess.engine.Team;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.BoardUtilities;
 import net.chess.engine.board.Move;
-import net.chess.engine.board.Square;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 
-import static net.chess.engine.board.Move.MajorAttackMove;
-import static net.chess.engine.board.Move.MajorMove;
-
-public class Queen extends Piece {
+public final class Queen extends Piece implements SlidingPiece {
 
     private final static int[] POSSIBLE_MOVE_COORDINATES = {-9, -8, -7, -1, 1, 7, 8, 9};
 
@@ -23,58 +16,29 @@ public class Queen extends Piece {
     }
 
     public Queen (final int piecePosition, final Team pieceTeam, final boolean isFirstMove) {
-        super (piecePosition, pieceTeam, PieceType.ROOK, isFirstMove);
+        super (piecePosition, pieceTeam, PieceType.QUEEN, isFirstMove);
     }
 
     @Override
     public Collection <Move> calcLegalMoves (final Board board) {
-        final List <Move> legalMoves = new ArrayList <> ();
-
-        for (final int candidateCoordinateOffset : POSSIBLE_MOVE_COORDINATES) {
-            int candidateDestinationCoordinate = this.piecePosition;
-
-            while (BoardUtilities.isValidSquareCoordinate (candidateDestinationCoordinate)) {
-                if (isFirstColumnExclusion (candidateDestinationCoordinate, candidateCoordinateOffset)
-                        || isEighthColumnExclusion (candidateDestinationCoordinate, candidateCoordinateOffset)) {
-                    break;
-                }
-
-                candidateDestinationCoordinate += candidateCoordinateOffset;
-
-                if (BoardUtilities.isValidSquareCoordinate (candidateDestinationCoordinate)) {
-                    final Square candidateDestinationSquare = board.getSquare (candidateDestinationCoordinate);
-
-                    if (!candidateDestinationSquare.isOccupied ()) {
-                        legalMoves.add (new MajorMove (board, this, candidateDestinationCoordinate));
-                    } else {
-                        final Piece pieceAtDestination = candidateDestinationSquare.getPiece ();
-                        final Team pieceTeam = candidateDestinationSquare.getPiece ().getPieceTeam ();
-
-                        if (this.pieceTeam != pieceTeam) {
-                            legalMoves.add (new MajorAttackMove (board, this, candidateDestinationCoordinate, pieceAtDestination));
-                        }
-                        // if a piece is there it will stop looping to the next diagonal square
-                        break;
-                    }
-                }
-            }
-        }
-        return Collections.unmodifiableList (legalMoves);
+         return calcSliding(POSSIBLE_MOVE_COORDINATES, this, board);
     }
 
-    private static boolean isFirstColumnExclusion (final int currentPosition, final int candidateOffset) {
+    public boolean isFirstColumnExclusion (final int currentPosition, final int candidateOffset) {
         return BoardUtilities.FIRST_COLUMN[currentPosition]
                 && (candidateOffset == -1 || candidateOffset == -9 || candidateOffset == 7);
     }
 
-    private static boolean isEighthColumnExclusion (final int currentPosition, final int candidateOffset) {
+    public boolean isEighthColumnExclusion (final int currentPosition, final int candidateOffset) {
         return BoardUtilities.EIGHTH_COLUMN[currentPosition]
                 && (candidateOffset == 1 || candidateOffset == 9 || candidateOffset == -7);
     }
 
     @Override
     public Queen movePiece (Move move) {
-        return new Queen (move.getDestinationCoordinate (), move.getPiece ().getPieceTeam (), false);
+        return move.getPiece().getPieceTeam() == Team.WHITE ?
+                BoardUtilities.cachedWhiteQueens[move.getDestinationCoordinate()]
+                : BoardUtilities.cachedBlackQueens[move.getDestinationCoordinate()];
     }
 
     @Override
