@@ -56,7 +56,7 @@ public class PromotionDialog extends JDialog {
         this.add(panel);
         // Set size and visibility
         this.pack();
-        this.setLocation(new Point(parent.getMousePosition(true).x + 385, parent.getMousePosition(true).y));
+        this.setLocationRelativeTo(parent);
         this.setVisible(true);
     }
 

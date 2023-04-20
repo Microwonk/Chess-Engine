@@ -93,6 +93,16 @@ public abstract class Move {
         return builder.build();
     }
 
+    String disambiguationFile() {
+        for(final Move move : this.board.currentPlayer().getLegalMoves()) {
+            if(move.getDestinationCoordinate() == this.destinationCoordinate && !this.equals(move) &&
+                    this.piece.getPieceType().equals(move.getPiece().getPieceType())) {
+                return BoardUtilities.getPositionAtCoordinate(this.piece.getPosition()).substring(0, 1);
+            }
+        }
+        return "";
+    }
+
     public static class MajorAttackMove extends AttackMove {
 
         public MajorAttackMove (final Board board
@@ -109,7 +119,8 @@ public abstract class Move {
 
         @Override
         public String toString () {
-            return piece.getPieceType() + BoardUtilities.getPositionAtCoordinate(this.getCurrentCoordinate());
+            return piece.getPieceType() + disambiguationFile() + "x" +
+                    BoardUtilities.getPositionAtCoordinate(this.destinationCoordinate);
         }
     }
 
@@ -128,8 +139,8 @@ public abstract class Move {
 
         @Override
         public String toString () {
-            assert piece != null;
-            return piece.getPieceType().toString() + BoardUtilities.getPositionAtCoordinate(this.getCurrentCoordinate());
+            return piece.getPieceType().toString() + disambiguationFile() +
+                    BoardUtilities.getPositionAtCoordinate(this.destinationCoordinate);
         }
     }
 
@@ -287,7 +298,8 @@ public abstract class Move {
 
         @Override
         public String toString () {
-            return "";
+            return BoardUtilities.getPositionAtCoordinate(this.piece.getPosition()) + "-" +
+                    BoardUtilities.getPositionAtCoordinate(this.destinationCoordinate) + "=" + this.promotedToPiece.getPieceType();
         }
 
         public Piece getPromotedToPiece () {

@@ -1,4 +1,4 @@
-package net.chess.engine.player;
+package net.chess.engine.board;
 
 import net.chess.engine.board.Board;
 import net.chess.engine.board.Move;

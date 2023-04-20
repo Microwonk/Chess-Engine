@@ -4,7 +4,7 @@ import net.chess.ai.AI;
 import net.chess.ai.Evaluator;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.Move;
-import net.chess.engine.player.MoveTransition;
+import net.chess.engine.board.MoveTransition;
 import net.chess.gui.Chess;
 
 import java.util.ArrayList;

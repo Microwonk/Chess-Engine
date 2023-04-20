@@ -18,7 +18,7 @@ public class HotKeys implements KeyListener {
 
     @Override
     public void keyPressed (KeyEvent e) {
-        Chess.get().getLogger().printLog("Key Pressed: " + e.getKeyCode()); // for finding out the hot keys KeyCode
+        // Chess.get().getLogger().printLog("Key Pressed: " + e.getKeyCode()); // for finding out the hot keys KeyCode
         switch (e.getKeyCode()) {
             case 37 -> Chess.get().prevMove(); // left arrow
             case 39 -> Chess.get().nextMove(); // right arrow
@@ -51,7 +51,7 @@ public class HotKeys implements KeyListener {
             case 10 -> {
                 Chess.get().getLogger().printLog(stringBuilder);
                 try {
-                    Chess.get().getLogger().printLog(Chess.get().getGameBoard().currentPlayer().makeMove(PGNParser.parseMove(Chess.get().getGameBoard(), stringBuilder.toString())).getTransitionBoard());
+                    // Chess.get().getLogger().printLog(Chess.get().getGameBoard().currentPlayer().makeMove(PGNParser.parseMove(Chess.get().getGameBoard(), stringBuilder.toString())).getTransitionBoard());
                     Chess.get().setChessBoard(Chess.get().getGameBoard().currentPlayer().makeMove(PGNParser.parseMove(Chess.get().getGameBoard(), stringBuilder.toString())).getTransitionBoard());
                 } catch (Exception ex) {
                     Chess.get().getLogger().printLog(ex);

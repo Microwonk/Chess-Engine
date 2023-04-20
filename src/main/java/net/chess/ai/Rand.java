@@ -2,7 +2,7 @@ package net.chess.ai;
 
 import net.chess.engine.board.Board;
 import net.chess.engine.board.Move;
-import net.chess.engine.player.MoveTransition.MoveStatus;
+import net.chess.engine.board.MoveTransition.MoveStatus;
 
 import java.util.ArrayList;
 import java.util.List;

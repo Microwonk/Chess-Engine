@@ -41,7 +41,7 @@ public final class King extends Piece {
             , final boolean isCastled
             , final boolean isKingSideCapable
             , final boolean isQueenSideCapable) {
-        super(piecePosition, pieceTeam, PieceType.ROOK, isFirstMove);
+        super(piecePosition, pieceTeam, PieceType.KING, isFirstMove);
         this.isKingSideCapable = isKingSideCapable;
         this.isCastled = isCastled;
         this.isQueenSideCapable = isQueenSideCapable;

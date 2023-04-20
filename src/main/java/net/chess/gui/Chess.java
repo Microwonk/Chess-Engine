@@ -1,19 +1,17 @@
 package net.chess.gui;
 
 import net.chess.ai.AI;
-import net.chess.ai.AlphaBeta.AlphaBeta;
 import net.chess.ai.AlphaBeta.AlphaBetaMultiThreaded;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.BoardUtilities;
 import net.chess.engine.board.Move;
 import net.chess.engine.board.Square;
 import net.chess.engine.pieces.*;
-import net.chess.engine.player.MoveTransition.MoveStatus;
-import net.chess.engine.player.MoveTransition;
+import net.chess.engine.board.MoveTransition.MoveStatus;
+import net.chess.engine.board.MoveTransition;
 import net.chess.gui.audio.AudioHandler;
 import net.chess.gui.util.Properties;
 import net.chess.parsing.FenParser;
-import net.chess.parsing.PGNParser;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -265,6 +263,7 @@ public class Chess implements Publisher <Object> {
             if (this.settingsDialog == null) {
                 this.settingsDialog = new SettingsDialog(this.frame);
             }
+            this.settingsDialog.setLocationRelativeTo(this.frame);
             this.settingsDialog.setVisible(true);
         });
 
@@ -899,12 +898,7 @@ public class Chess implements Publisher <Object> {
                 if (board.whitePlayer().getPlayerKing().getPosition() == this.squareID) {
                     this.setBackground(Color.GRAY);
                 }
-            } else if (isDrawByLackOfMaterial()) {
-                if (board.whitePlayer().getPlayerKing().getPosition() == this.squareID
-                        || board.blackPlayer().getPlayerKing().getPosition() == this.squareID) {
-                    this.setBackground(Color.GRAY);
-                }
-            } else if (isDrawByRepetition()) {
+            } else if (isDrawByLackOfMaterial() || isDrawByRepetition()) {
                 if (board.whitePlayer().getPlayerKing().getPosition() == this.squareID
                         || board.blackPlayer().getPlayerKing().getPosition() == this.squareID) {
                     this.setBackground(Color.GRAY);

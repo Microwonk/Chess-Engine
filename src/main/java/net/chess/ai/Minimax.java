@@ -2,15 +2,10 @@ package net.chess.ai;
 
 import net.chess.engine.board.Board;
 import net.chess.engine.board.Move;
-import net.chess.engine.player.MoveTransition;
+import net.chess.engine.board.MoveTransition;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * AI minimax algorithm type

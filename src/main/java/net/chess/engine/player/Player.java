@@ -3,6 +3,7 @@ package net.chess.engine.player;
 import net.chess.engine.Team;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.Move;
+import net.chess.engine.board.MoveTransition;
 import net.chess.engine.pieces.King;
 import net.chess.engine.pieces.Pawn;
 import net.chess.engine.pieces.Piece;
@@ -14,6 +15,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static net.chess.engine.pieces.Piece.PieceType.KING;
 
 public abstract class Player {
 
@@ -47,12 +50,10 @@ public abstract class Player {
     }
 
     private King establishKing() {
-        for (final Piece piece : getActivePieces()) {
-            if (piece instanceof King) {
-                return (King) piece;
-            }
-        }
-        throw new ChessException("Not a valid Board, no King");
+        return (King) getActivePieces().stream()
+                .filter(piece -> piece.getPieceType().isKing())
+                .findAny()
+                .orElseThrow(RuntimeException::new);
     }
 
     public boolean isMoveLegal(final Move move) {

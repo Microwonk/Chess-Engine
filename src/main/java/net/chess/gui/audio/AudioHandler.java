@@ -53,16 +53,24 @@ public class AudioHandler {
             Mixer.Info[] mixerInfo = AudioSystem.getMixerInfo();
             for (Mixer.Info info : mixerInfo) {
                 Mixer mixer = AudioSystem.getMixer(info);
-                if (mixer.isLineSupported(Port.Info.SPEAKER)) {
-                    Port port = (Port) mixer.getLine(Port.Info.SPEAKER);
-                    port.open();
-                    FloatControl volumeControl = (FloatControl) port.getControl(FloatControl.Type.VOLUME);
-                    volumeControl.setValue(volume);
-                    port.close();
+                if (mixer.isLineSupported(Port.Info.HEADPHONE)) {
+                    subSystemVolumeChange(volume, mixer, Port.Info.HEADPHONE);
+                } else if (mixer.isLineSupported(Port.Info.SPEAKER)) {
+                    subSystemVolumeChange(volume, mixer, Port.Info.SPEAKER);
+                } else if (mixer.isLineSupported(Port.Info.LINE_OUT)) {
+                    subSystemVolumeChange(volume, mixer, Port.Info.LINE_OUT);
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private static void subSystemVolumeChange(final float volume, final Mixer mixer, final Port.Info portInfo) throws Exception{
+        Port port = (Port) mixer.getLine(portInfo);
+        port.open();
+        FloatControl volumeControl = (FloatControl) port.getControl(FloatControl.Type.VOLUME);
+        volumeControl.setValue(volume);
+        port.close();
     }
 }
