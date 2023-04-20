@@ -13,13 +13,13 @@ import net.chess.engine.player.MoveTransition;
 import net.chess.gui.audio.AudioHandler;
 import net.chess.gui.util.Properties;
 import net.chess.parsing.FenParser;
+import net.chess.parsing.PGNParser;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -28,7 +28,6 @@ import java.util.*;
 import java.util.concurrent.SubmissionPublisher;
 import java.util.stream.Collectors;
 
-import static java.lang.Thread.sleep;
 import static java.util.concurrent.Flow.*;
 import static javax.swing.SwingUtilities.isLeftMouseButton;
 import static javax.swing.SwingUtilities.isRightMouseButton;
@@ -36,6 +35,8 @@ import static net.chess.engine.board.Move.PawnMove;
 import static net.chess.engine.board.Move.PawnPromotion;
 import static net.chess.engine.pieces.Piece.PieceType;
 import static net.chess.gui.util.Properties.*;
+
+// general TODO: fix the toString method of all moves
 
 /**
  * Container for all the GUI Content Management and Connection of all the Components -> Singleton type
@@ -108,15 +109,17 @@ public class Chess implements Publisher <Object> {
                 int width = frame.getWidth() - (chessBoard.getPreferredSize().width +14) + (chessBoard.getPreferredSize().height - chessBoard.getHeight());
                 int height = frame.getHeight();
                 logger.setPreferredSize(new Dimension(width, height));
-                Font f = logger.getTextArea().getFont();
-                logger.getTextArea().setFont(new Font(f.getFontName(), f.getStyle(), (logger.getWidth()/18)));
                 logger.revalidate();
             }
         });
 
-        this.frame.addKeyListener(addHotKeys());
+        this.frame.addKeyListener(new HotKeys());
         this.frame.setVisible(true);
         Properties.init();
+    }
+
+    public void update() {
+        Chess.get().getChessBoard().drawBoard(Chess.get().getGameBoard());
     }
 
     public void addSubscriber (Subscriber <? super Object> subscriber) {
@@ -147,31 +150,6 @@ public class Chess implements Publisher <Object> {
         Chess.get().getMoveLog().clear();
         Chess.get().getTakenPieces().refresh(Chess.get().getMoveLog());
         Chess.get().getChessBoard().drawBoard(Chess.get().getGameBoard());
-    }
-
-    /**
-     * @return the Configuration of the Hotkeys -> can be made into global variables so that user can customize
-     */
-    private KeyListener addHotKeys () {
-        return new KeyListener() {
-            @Override
-            public void keyTyped (KeyEvent e) {}
-
-            @Override
-            public void keyPressed (KeyEvent e) {
-                //GUI_Contents.get().logger.printLog("Key Pressed: " + e.getKeyCode()); // for finding out the hot keys KeyCode
-                switch (e.getKeyCode()) {
-                    case 37 -> prevMove(); // left arrow
-                    case 39 -> nextMove(); // right arrow
-                    case 38 -> endBoard(); // up arrow
-                    case 40 -> beginBoard(); // down arrow
-                    case 82 -> reset(); // r key
-                }
-            }
-
-            @Override
-            public void keyReleased (KeyEvent e) {}
-        };
     }
 
     /**
@@ -220,7 +198,7 @@ public class Chess implements Publisher <Object> {
     /**
      * load from .fen and later from .pgn or db
      */
-    private void loadGame() {
+    protected void loadGame () {
         final JFileChooser fileChooser = new JFileChooser();
         final File selectedFile;
         fileChooser.setCurrentDirectory(new File(savePath + "."));
@@ -248,7 +226,7 @@ public class Chess implements Publisher <Object> {
     /**
      * @param toSave Fen String or PGN Format Moves
      */
-    private void saveGame (final String toSave) {
+    protected void saveGame (final String toSave) {
         final JFileChooser fileChooser = new JFileChooser();
         File selectedFile;
         fileChooser.setCurrentDirectory(new File(savePath));
@@ -360,6 +338,10 @@ public class Chess implements Publisher <Object> {
     @Override
     public void subscribe (Subscriber <? super Object> subscriber) {
         this.publisher.subscribe(subscriber);
+    }
+
+    public void setChessBoard (final Board board) {
+        this.board = board;
     }
 
     /**
@@ -489,7 +471,7 @@ public class Chess implements Publisher <Object> {
     /**
      * removes all the moves and creates new Standard Board
      */
-    private void reset () {
+    protected void reset () {
         if (moveLog.getMoves().isEmpty()) {
             return;
         }
@@ -504,7 +486,7 @@ public class Chess implements Publisher <Object> {
     /**
      * visualizes the starting board with sound
      */
-    private void beginBoard () {
+    protected void beginBoard () {
         if (this.moveLog.getMoves().isEmpty()) {
             return;
         }
@@ -517,7 +499,7 @@ public class Chess implements Publisher <Object> {
     /**
      * visualizes the end board with sound
      */
-    private void endBoard () {
+    protected void endBoard () {
         this.movingEnabled = true;
         if (currentMove == this.moveLog.size() - 1
                 || this.moveLog.getMoves().isEmpty()) {
@@ -531,7 +513,7 @@ public class Chess implements Publisher <Object> {
     /**
      * visualizes the previous move with sound
      */
-    private void prevMove () {
+    protected void prevMove () {
         if (currentMove > 0 && this.moveLog != null && this.moveLog.size() > 0) {
             currentMove--;
             chessBoard.drawBoard(this.moveLog.getMoves().get(currentMove).getBoard());
@@ -551,7 +533,7 @@ public class Chess implements Publisher <Object> {
     /**
      * visualizes the next move with sound
      */
-    private void nextMove () {
+    protected void nextMove () {
         if (currentMove < moveLog.size()) {
             if (currentMove == moveLog.size() - 1) {
                 if (this.moveLog.getMoves().get(currentMove).isAttack()) {
@@ -825,7 +807,7 @@ public class Chess implements Publisher <Object> {
                         currentMove++;
                         board = transition.getTransitionBoard();
                         moveLog.addMove(move);
-                        logger.printLog(FenParser.parsePGN(moveLog));
+                        logger.printLog(move.toString());
                         positionLog.add(FenParser.parseFen(transition.getTransitionBoard()));
                     }
                     sourceSquare = null;
@@ -841,14 +823,10 @@ public class Chess implements Publisher <Object> {
         private void assignSquareIcon (final Board board) throws Exception {
             this.removeAll();
             if (board.getSquare(this.squareID).isOccupied()) {
-                final BufferedImage image = ImageIO.read(new File(
-                        artPath + board.getSquare(this.squareID)
-                                .getPiece().getPieceTeam().toString()
-                                .charAt(0) + board.getSquare(this.squareID)
-                                .getPiece().toString() + ".png")
-                );
-                add(new JLabel(new ImageIcon(image.getScaledInstance
-                        (CHESS_BOARD_DIMENSION.width/15, CHESS_BOARD_DIMENSION.height/8, 0))));
+                add(new JLabel(artPack.load(board.getSquare(this.squareID)
+                        .getPiece().getPieceTeam().toString()
+                        .charAt(0) + board.getSquare(this.squareID)
+                        .getPiece().toString())));
             }
         }
 
@@ -895,12 +873,10 @@ public class Chess implements Publisher <Object> {
          * @param board passed in Board to check for mate, checks and stalemate
          */
         private void signifyCheck (final Board board) {
-            if (!signifyChecksActive) return;
+            if (!signifyChecksActive || moveLog.size() < 1) return;
 
             Color red = new Color(152, 40, 0);
-            if (moveLog.size() < 1) {
-                return;
-            }
+            // note: this code is written this way because otherwise there would be method overloading, which makes it throw a no King error. :(
             if (board.blackPlayer().isInCheck()) {
                 if (!board.blackPlayer().isInCheckmate()) {
                     red = red.brighter();
@@ -944,7 +920,6 @@ public class Chess implements Publisher <Object> {
                     || BoardUtilities.THIRD_ROW[this.squareID]
                     || BoardUtilities.FIFTH_ROW[this.squareID]
                     || BoardUtilities.SEVENTH_ROW[this.squareID]
-
                     ? (this.squareID % 2 == 0 ? colorPack.dark() : colorPack.light())
                     : (this.squareID % 2 != 0 ? colorPack.dark() : colorPack.light());
         }

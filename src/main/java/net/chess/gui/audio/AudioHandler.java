@@ -32,7 +32,7 @@ public class AudioHandler {
     public static void playSound (final int soundType) {
         if (!soundOn || soundType > 2 || soundType < 0) return;
         try {
-            FileInputStream fileInputStream = new FileInputStream("assets/pieces/sounds/" + sounds[soundType].getFile());
+            FileInputStream fileInputStream = new FileInputStream("assets/sounds/chesscom/" + sounds[soundType].getFile());
             Player player = new Player(fileInputStream);
             Thread playerThread = new Thread(() -> {
                 try {

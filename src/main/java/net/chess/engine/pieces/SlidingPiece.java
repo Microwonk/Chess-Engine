@@ -5,6 +5,7 @@ import net.chess.engine.board.Board;
 import net.chess.engine.board.BoardUtilities;
 import net.chess.engine.board.Move;
 import net.chess.engine.board.Square;
+import net.chess.exception.ChessException;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,10 +14,12 @@ import java.util.List;
 
 public interface SlidingPiece {
     boolean isEighthColumnExclusion (int currentPosition, int candidateOffset);
-
     boolean isFirstColumnExclusion (int currentPosition, int candidateOffset);
 
     default Collection <Move> calcSliding (final int[] possibleMoves, final Piece p, final Board board) {
+        if (!(p instanceof Bishop || p instanceof Queen || p instanceof Rook)) {
+            throw new ChessException("Interface may not be inherited by non-SlidingPiece");
+        }
         final List <Move> legalMoves = new ArrayList <>();
 
         for (final int candidateCoordinateOffset : possibleMoves) {
@@ -42,7 +45,6 @@ public interface SlidingPiece {
                         if (p.pieceTeam != pieceTeam) {
                             legalMoves.add(new Move.MajorAttackMove(board, p, candidateDestinationCoordinate, pieceAtDestination));
                         }
-                        // if a piece is there it will stop looping to the next diagonal square
                         break;
                     }
                 }
