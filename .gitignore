@@ -24,4 +24,3 @@ target/
 *.tar.gz
 *.rar
 *.class
-*.properties

@@ -21,7 +21,7 @@ public class Properties {
             new ColorPack(new Color(200, 10, 200), new Color(90, 10, 90), "Purple")
     ));
     public static final Set <ArtPack> defaultArtPacks = new HashSet <>(List.of(
-            new ArtPack("assets/default/art/pixel_art/", "PixelArt", new java.util.Properties())
+            new ArtPack("assets/art/default/pixel_art/", "PixelArt", new java.util.Properties())
     ));
     public static final Set <SoundPack> defaultSoundPacks = new HashSet <>(List.of(
             new SoundPack("/assets/sounds/chesscom/", "Chess.com")
