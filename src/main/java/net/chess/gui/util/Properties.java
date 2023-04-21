@@ -27,8 +27,8 @@ public class Properties {
             new SoundPack("/assets/sounds/chesscom/", "Chess.com")
     ));
     public static java.util.Properties properties = new java.util.Properties();
-    public static String artPath;
-    public static String miscPath; // TODO: move into artPacks
+    public static String defArtPath;
+    public static String miscPath; // TODO: move into artPacks?
     public static String soundsPath;
     public static boolean highlightLegalMovesActive;
     public static String savePath;
@@ -45,7 +45,7 @@ public class Properties {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        artPath = properties.getProperty("artPath");
+        defArtPath = properties.getProperty("defArtPath");
         miscPath = properties.getProperty("miscPath");
         savePath = properties.getProperty("savePath");
         soundsPath = properties.getProperty("soundsPath");

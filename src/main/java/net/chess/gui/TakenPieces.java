@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import static net.chess.gui.util.Properties.artPath;
+import static net.chess.gui.util.Properties.defArtPath;
 
 /**
  * JPanel to represent the Taken Pieces in one Game
@@ -62,7 +62,7 @@ public class TakenPieces extends JPanel {
 
         for (final Piece takenPiece : whiteTakenPieces) {
             try {
-                this.EAST.add(new JLabel(new ImageIcon(ImageIO.read(new File(artPath
+                this.EAST.add(new JLabel(new ImageIcon(ImageIO.read(new File(defArtPath
                         + takenPiece.getPieceTeam().toString().charAt(0)
                         + takenPiece + ".png")))));
 
@@ -73,7 +73,7 @@ public class TakenPieces extends JPanel {
 
         for (final Piece takenPiece : blackTakenPieces) {
             try {
-                this.WEST.add(new JLabel(new ImageIcon(ImageIO.read(new File(artPath
+                this.WEST.add(new JLabel(new ImageIcon(ImageIO.read(new File(defArtPath
                         + takenPiece.getPieceTeam().toString().charAt(0)
                         + takenPiece + ".png")))));
 

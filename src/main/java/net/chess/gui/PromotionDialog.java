@@ -4,9 +4,8 @@ import net.chess.engine.Team;
 import net.chess.engine.pieces.Piece;
 
 import javax.swing.*;
-import java.awt.*;
 
-import static net.chess.gui.util.Properties.artPath;
+import static net.chess.gui.util.Properties.defArtPath;
 
 /**
  * Popup dialog for Promoting a Promotion Pawn
@@ -20,10 +19,10 @@ public class PromotionDialog extends JDialog {
         final String team = pieceColor.toString().substring(0, 1);
 
         // Create buttons for each promotion piece
-        JButton queenButton = new JButton(new ImageIcon(artPath + team + "Q.png"));
-        JButton rookButton = new JButton(new ImageIcon(artPath + team + "R.png"));
-        JButton bishopButton = new JButton(new ImageIcon(artPath + team + "B.png"));
-        JButton knightButton = new JButton(new ImageIcon(artPath + team + "N.png"));
+        JButton queenButton = new JButton(new ImageIcon(defArtPath + team + "Q.png"));
+        JButton rookButton = new JButton(new ImageIcon(defArtPath + team + "R.png"));
+        JButton bishopButton = new JButton(new ImageIcon(defArtPath + team + "B.png"));
+        JButton knightButton = new JButton(new ImageIcon(defArtPath + team + "N.png"));
 
         queenButton.setFocusable(false);
         rookButton.setFocusable(false);

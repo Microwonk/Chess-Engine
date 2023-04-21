@@ -12,7 +12,7 @@ public record ArtPack(String location, String name, java.util.Properties packInf
         try {
             return new ImageIcon(
                     ImageIO.read(
-                            new File((location.isEmpty() ? Properties.artPath : location) + filename + ".png"
+                            new File((location.isEmpty() ? Properties.defArtPath : location) + filename + ".png"
                     )).getScaledInstance(width(), height(), 0));
         } catch (Exception e) {
             e.printStackTrace();
