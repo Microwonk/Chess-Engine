@@ -23,9 +23,6 @@ public class Properties {
     public static final Set <ArtPack> defaultArtPacks = new HashSet <>(List.of(
             new ArtPack("assets/art/default/pixel_art/", "PixelArt", new java.util.Properties())
     ));
-    public static final Set <SoundPack> defaultSoundPacks = new HashSet <>(List.of(
-            new SoundPack("/assets/sounds/chesscom/", "Chess.com")
-    ));
     public static java.util.Properties properties = new java.util.Properties();
     public static String defArtPath;
     public static String miscPath; // TODO: move into artPacks?
@@ -36,7 +33,6 @@ public class Properties {
     public static boolean soundOn;
     public static ColorPack colorPack;
     public static ArtPack artPack;
-    public static SoundPack soundPack;
     public static float volume;
 
     static {
@@ -76,9 +72,5 @@ public class Properties {
 
     public static ArtPack getArtPackByName(String name) {
         return defaultArtPacks.stream().filter(c -> c.name().equals(name)).toList().get(0);
-    }
-
-    public static SoundPack getSoundPackByName(String name) {
-        return defaultSoundPacks.stream().filter(c -> c.name().equals(name)).toList().get(0);
     }
 }

@@ -6,7 +6,7 @@ import java.awt.*;
 
 public class Logger extends JPanel {
 
-    private final JScrollPane scrollPane;
+    protected final JScrollPane scrollPane;
     private final JTextArea textArea;
 
     public Logger() {

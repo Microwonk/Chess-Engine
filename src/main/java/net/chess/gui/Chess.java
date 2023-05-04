@@ -10,6 +10,8 @@ import net.chess.engine.pieces.*;
 import net.chess.engine.board.MoveTransition.MoveStatus;
 import net.chess.engine.board.MoveTransition;
 import net.chess.gui.audio.AudioHandler;
+import net.chess.gui.observer.Observable;
+import net.chess.gui.observer.Observer;
 import net.chess.gui.util.Properties;
 import net.chess.parsing.FenParser;
 
@@ -23,10 +25,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.*;
-import java.util.concurrent.SubmissionPublisher;
 import java.util.stream.Collectors;
 
-import static java.util.concurrent.Flow.*;
 import static javax.swing.SwingUtilities.isLeftMouseButton;
 import static javax.swing.SwingUtilities.isRightMouseButton;
 import static net.chess.engine.board.Move.PawnMove;
@@ -42,12 +42,13 @@ import static net.chess.gui.util.Properties.*;
  * @author Nicolas Frey
  * @version 1.0
  */
-public class Chess implements Publisher <Object> {
+public class Chess extends Observable {
 
     private final JFrame frame;
     private final ChessBoard chessBoard;
     private final TakenPieces takenPieces;
     private final Logger logger;
+    private final RecentGamesPlayed leftPanel;
     private Board board;
     private final MoveLog moveLog;
     private final GameDialog gameDialog;
@@ -57,7 +58,6 @@ public class Chess implements Publisher <Object> {
     private final Dimension SQUARE_DIMENSION = new Dimension(50, 50);
 
     private Move computerMove; // not needed until later
-    private final SubmissionPublisher <Object> publisher;
     private final ArrayList <String> positionLog; // for repetition
     // for moving with mouse clicking
     private Square sourceSquare;
@@ -73,16 +73,16 @@ public class Chess implements Publisher <Object> {
     private static final Chess INSTANCE = new Chess();
 
     private Chess () {
-        this.frame = new JFrame("Chess by Nicolas Frey");
+        this.frame = new JFrame("森 Mori Chess ~dev");
         this.frame.setMinimumSize(FRAME_DIMENSION);
         this.board = Board.createStandardBoard();
         this.boardDirection = BoardDirection.NORMAL;
         this.positionLog = new ArrayList <>();
         this.moveLog = new MoveLog();
-        this.publisher = new SubmissionPublisher <>();
-        this.addSubscriber(new GameSubscriber());
+        this.addObserver(new GameObserver());
         this.gameDialog = new GameDialog(this.frame);
         this.logger = new Logger();
+        this.leftPanel = new RecentGamesPlayed();
         this.currentMove = 0;
         this.movingEnabled = true;
 
@@ -94,6 +94,7 @@ public class Chess implements Publisher <Object> {
         this.takenPieces = new TakenPieces();
         this.frame.add(this.takenPieces, BorderLayout.SOUTH);
         this.frame.add(logger, BorderLayout.EAST);
+        this.frame.add(leftPanel, BorderLayout.WEST);
         this.frame.setJMenuBar(makeMenuBar());
         this.frame.setSize(FRAME_DIMENSION);
         this.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -106,8 +107,10 @@ public class Chess implements Publisher <Object> {
             public void componentResized(ComponentEvent e) {
                 int width = frame.getWidth() - (chessBoard.getPreferredSize().width +14) + (chessBoard.getPreferredSize().height - chessBoard.getHeight());
                 int height = frame.getHeight();
-                logger.setPreferredSize(new Dimension(width, height));
+                logger.setPreferredSize(new Dimension(width / 2, height));
+                leftPanel.setPreferredSize(new Dimension(width/2, height));
                 logger.revalidate();
+                leftPanel.revalidate();
             }
         });
 
@@ -118,14 +121,6 @@ public class Chess implements Publisher <Object> {
 
     public void update() {
         Chess.get().getChessBoard().drawBoard(Chess.get().getGameBoard());
-    }
-
-    public void addSubscriber (Subscriber <? super Object> subscriber) {
-        publisher.subscribe(subscriber);
-    }
-
-    private void notifySubscribers (Object obj) {
-        publisher.submit(obj);
     }
 
     public static Chess get () {
@@ -331,12 +326,7 @@ public class Chess implements Publisher <Object> {
      * @param gameDialog to notify all Subscribers
      */
     private void gameUpdate (final GameDialog gameDialog) {
-        notifySubscribers(gameDialog);
-    }
-
-    @Override
-    public void subscribe (Subscriber <? super Object> subscriber) {
-        this.publisher.subscribe(subscriber);
+        notifyObservers(gameDialog);
     }
 
     public void setChessBoard (final Board board) {
@@ -346,23 +336,10 @@ public class Chess implements Publisher <Object> {
     /**
      * Game Subscriber
      */
-    private static class GameSubscriber implements Subscriber <Object> {
-
-        private Subscription subscription;
+    private static class GameObserver implements Observer {
 
         @Override
-        public void onSubscribe (Subscription subscription) {
-            this.subscription = subscription;
-            subscription.request(1); // Request initial batch of 1 event
-        }
-
-        @Override
-        public void onNext (Object item) {
-            handleGameEvent(item);
-            subscription.request(1); // Request next batch of 1 event
-        }
-
-        private void handleGameEvent (Object ignored) {
+        public void update (Observable o, Object arg) {
             if (Chess.get().getGame().isAIPlayer(Chess.get().getGameBoard().currentPlayer())
                     && !Chess.get().getGameBoard().currentPlayer().isInCheckmate()
                     && !Chess.get().isDrawByLackOfMaterial()
@@ -379,16 +356,6 @@ public class Chess implements Publisher <Object> {
                     Chess.get().logger.printLog("game over, " + Chess.get().getGameBoard().currentPlayer() + " is in stalemate!");
                 }
             }
-        }
-
-        @Override
-        public void onError (Throwable throwable) {
-            throwable.printStackTrace();
-        }
-
-        @Override
-        public void onComplete () {
-            Chess.get().logger.printLog("Game over!");
         }
     }
 
@@ -434,7 +401,7 @@ public class Chess implements Publisher <Object> {
      * @param playerType to notify the subscriber of the new Player-type
      */
     private void moveMadeUpdate (final PlayerType playerType) {
-        notifySubscribers(playerType);
+        notifyObservers(playerType);
     }
 
     ChessBoard getChessBoard () {

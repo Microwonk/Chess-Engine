@@ -3,15 +3,11 @@ package net.chess.gui;
 import net.chess.gui.audio.AudioHandler;
 import net.chess.gui.util.ColorPack;
 import net.chess.gui.util.Properties;
-import net.chess.gui.util.SoundPack;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 // TODO : A LOT
 
