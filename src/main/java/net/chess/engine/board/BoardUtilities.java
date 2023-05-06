@@ -3,6 +3,7 @@ package net.chess.engine.board;
 import net.chess.engine.Team;
 import net.chess.engine.pieces.*;
 import net.chess.exception.ChessException;
+import net.chess.gui.Chess;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -184,11 +185,16 @@ public class BoardUtilities {
         }
     }
 
-    public static <T extends Piece> T[] genPieces(Class<T> type, Team team) throws Exception {
-        T[] pieces = (T[]) Array.newInstance(type, NUM_SQUARES);
+    public static <T extends Piece> T[] genPieces(final Class<T> type, final Team team) throws Exception {
+        final T[] pieces = (T[]) Array.newInstance(type, NUM_SQUARES);
         for (int i = 0; i < NUM_SQUARES; i++) {
             pieces[i] = type.getDeclaredConstructor(int.class, Team.class).newInstance(i, team);
         }
         return pieces;
+    }
+
+    public static boolean isEndGame(final Board board) {
+        return board.currentPlayer().isInCheckmate() ||
+                board.currentPlayer().isInStalemate();
     }
 }

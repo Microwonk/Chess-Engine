@@ -92,6 +92,11 @@ public final class Knight extends Piece {
     }
 
     @Override
+    public int locationBonus() {
+        return this.pieceTeam.knightBonus(this.piecePosition);
+    }
+
+    @Override
     public String toString () {
         return PieceType.KNIGHT.toString ();
     }

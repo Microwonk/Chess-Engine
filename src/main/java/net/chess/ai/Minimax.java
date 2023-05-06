@@ -47,7 +47,7 @@ public class Minimax implements AI {
 
     public int minimax (Board board, int depth, boolean maximizingPlayer) {
         if (depth == 0 || board.isGameOver()) {
-            return Evaluator.evaluate(board);
+            return Evaluator.evaluate(board, searchDepth);
         }
         int bestValue;
         if (maximizingPlayer) {

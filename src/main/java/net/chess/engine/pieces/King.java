@@ -106,6 +106,11 @@ public final class King extends Piece {
     }
 
     @Override
+    public int locationBonus() {
+        return this.pieceTeam.kingBonus(this.piecePosition);
+    }
+
+    @Override
     public String toString () {
         return PieceType.KING.toString();
     }

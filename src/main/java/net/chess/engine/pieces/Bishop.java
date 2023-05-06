@@ -42,6 +42,11 @@ public final class Bishop extends Piece implements SlidingPiece {
     }
 
     @Override
+    public int locationBonus() {
+        return this.pieceTeam.bishopBonus(this.piecePosition);
+    }
+
+    @Override
     public String toString () {
         return PieceType.BISHOP.toString();
     }

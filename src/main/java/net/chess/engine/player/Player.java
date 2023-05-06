@@ -97,7 +97,7 @@ public abstract class Player {
 
     public MoveTransition makeMove(final Move move) {
         if (!isMoveLegal(move)) {
-            return new MoveTransition(this.board, move, MoveTransition.MoveStatus.ILLEGAL_MOVE);
+            return new MoveTransition(this.board, MoveTransition.MoveStatus.ILLEGAL_MOVE);
         }
         final Board transitionBoard = move.execute();
         final Collection<Move> kingAttacks = Player.calculateAttacksOnSquare(
@@ -107,9 +107,9 @@ public abstract class Player {
         );
 
         if (!kingAttacks.isEmpty()) {
-            return new MoveTransition(this.board, move, MoveTransition.MoveStatus.LEAVES_IN_CHECK);
+            return new MoveTransition(this.board, MoveTransition.MoveStatus.LEAVES_IN_CHECK);
         }
-        return new MoveTransition(transitionBoard, move, MoveTransition.MoveStatus.DONE);
+        return new MoveTransition(transitionBoard, MoveTransition.MoveStatus.DONE);
     }
 
     public List<Piece> getActivePawns() {

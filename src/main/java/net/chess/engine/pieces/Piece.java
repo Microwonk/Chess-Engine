@@ -70,6 +70,8 @@ public abstract class Piece {
         return this.pieceType.getValue();
     }
 
+    public abstract int locationBonus();
+
     public enum PieceType {
 
         PAWN("P", 100) {
@@ -189,6 +191,11 @@ public abstract class Piece {
         @Override
         public Piece movePiece (Move move) {
             return null;
+        }
+
+        @Override
+        public int locationBonus() {
+            return 0;
         }
 
         public static Piece getNullPiece () {

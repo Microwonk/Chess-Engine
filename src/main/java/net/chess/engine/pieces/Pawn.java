@@ -170,6 +170,11 @@ public final class Pawn extends Piece {
     }
 
     @Override
+    public int locationBonus() {
+        return this.pieceTeam.pawnBonus(this.piecePosition);
+    }
+
+    @Override
     public String toString () {
         return PieceType.PAWN.toString();
     }

@@ -1,6 +1,7 @@
 package net.chess.gui;
 
 import net.chess.ai.AI;
+import net.chess.ai.AlphaBeta.AlphaBeta;
 import net.chess.ai.AlphaBeta.AlphaBetaMultiThreaded;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.BoardUtilities;
@@ -57,7 +58,6 @@ public class Chess extends Observable {
     private final Dimension CHESS_BOARD_DIMENSION = new Dimension(400, 400);
     private final Dimension SQUARE_DIMENSION = new Dimension(50, 50);
 
-    private Move computerMove; // not needed until later
     private final ArrayList <String> positionLog; // for repetition
     // for moving with mouse clicking
     private Square sourceSquare;
@@ -371,6 +371,7 @@ public class Chess extends Observable {
             //final AI miniMax = new Minimax(GUI_Contents.get().gameDialog.getSearchDepth());
             final AI alphaBeta = new AlphaBetaMultiThreaded(Chess.get().gameDialog.getSearchDepth());
             final Move move = alphaBeta.execute(Chess.get().getGameBoard());
+
             if (move.isAttack()) {
                 AudioHandler.playSound(1);
             } else {
@@ -383,7 +384,6 @@ public class Chess extends Observable {
         protected void done () {
             try {
                 final Move executedMove = get();
-                Chess.get().updateComputerMove(executedMove);
                 Chess.get().updateGameBoard(Chess.get().getGameBoard().currentPlayer().makeMove(executedMove).getTransitionBoard());
                 Chess.get().getMoveLog().addMove(executedMove);
                 Chess.get().getPositionLog().add(FenParser.parseFen(executedMove.getBoard()));
@@ -412,7 +412,7 @@ public class Chess extends Observable {
         return this.takenPieces;
     }
 
-    private MoveLog getMoveLog () {
+    public MoveLog getMoveLog () {
         return this.moveLog;
     }
 
@@ -420,12 +420,6 @@ public class Chess extends Observable {
         return this.positionLog;
     }
 
-    /**
-     * @param executedMove to update the current Computer Move and keep track of it
-     */
-    public void updateComputerMove (final Move executedMove) {
-        this.computerMove = executedMove;
-    }
 
     /**
      * @param board Board to update Board outside of Singleton

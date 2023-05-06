@@ -3,11 +3,15 @@ package net.chess.ai.AlphaBeta;
 import net.chess.ai.AI;
 import net.chess.ai.Evaluator;
 import net.chess.engine.board.Board;
+import net.chess.engine.board.BoardUtilities;
 import net.chess.engine.board.Move;
 import net.chess.engine.board.MoveTransition;
+import net.chess.engine.player.Player;
 import net.chess.gui.Chess;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -18,77 +22,103 @@ import java.util.List;
  */
 public class AlphaBeta implements AI {
 
-    private final int searchDepth;
+    final int searchDepth;
 
-    public AlphaBeta (final int searchDepth) {
+    public AlphaBeta(final int searchDepth) {
         this.searchDepth = searchDepth;
     }
 
     @Override
-    public Move execute (final Board board) {
-        List <Move> legalMoves = new ArrayList <> (board.currentPlayer ().getLegalMoves ());
-
-        Move bestMove = Move.MoveFactory.getNullMove();
+    public Move execute(final Board board) {
+        final Player currentPlayer = board.currentPlayer();
+        Move bestMove = Move.NULL_MOVE;
         int highestSeenValue = Integer.MIN_VALUE;
         int lowestSeenValue = Integer.MAX_VALUE;
-
-        for (final Move move : legalMoves) {
-            final MoveTransition moveTransition = board.currentPlayer ().makeMove (move);
-            if (moveTransition.getMoveStatus ().isDone ()) {
-                final int currentValue = alphaBeta(moveTransition.getTransitionBoard (), this.searchDepth - 1, Integer.MIN_VALUE, Integer.MAX_VALUE, true);
-                synchronized (this) {
-                    if (board.currentPlayer ().getTeam ().isWhite () && currentValue >= highestSeenValue) {
-                        highestSeenValue = currentValue;
-                        bestMove = move;
-                    } else if (board.currentPlayer ().getTeam ().isBlack () && currentValue <= lowestSeenValue) {
-                        lowestSeenValue = currentValue;
-                        bestMove = move;
+        int currentValue;
+        for (final Move move : board.currentPlayer().getLegalMoves()) {
+            final MoveTransition moveTransition = board.currentPlayer().makeMove(move);
+            if (moveTransition.getMoveStatus().isDone()) {
+                currentValue = currentPlayer.getTeam().isWhite() ?
+                        min(moveTransition.getTransitionBoard(), this.searchDepth - 1, highestSeenValue, lowestSeenValue) :
+                        max(moveTransition.getTransitionBoard(), this.searchDepth - 1, highestSeenValue, lowestSeenValue);
+                if (currentPlayer.getTeam().isWhite() && currentValue > highestSeenValue) {
+                    highestSeenValue = currentValue;
+                    bestMove = move;
+                    if (moveTransition.getTransitionBoard().blackPlayer().isInCheckmate()) {
+                        break;
+                    }
+                } else if (currentPlayer.getTeam().isBlack() && currentValue < lowestSeenValue) {
+                    lowestSeenValue = currentValue;
+                    bestMove = move;
+                    if (moveTransition.getTransitionBoard().whitePlayer().isInCheckmate()) {
+                        break;
                     }
                 }
             }
         }
-
-        Chess.get().getLogger().printLog("Best Move: " + bestMove
-                , "Evaluation: " + highestSeenValue
-                , "Color: " + board.currentPlayer());
         return bestMove;
     }
 
-    private int alphaBeta (Board board, int depth, int alpha, int beta, boolean maximizingPlayer) {
-        if (depth == 0) {
-            return Evaluator.evaluate (board);
-        }
+    private static String score(final Player currentPlayer,
+                                final int highestSeenValue,
+                                final int lowestSeenValue) {
 
-        if (maximizingPlayer) {
-            int maxEval = Integer.MIN_VALUE;
-            for (final Move move : board.currentPlayer ().getLegalMoves ()) {
-                final MoveTransition moveTransition = board.currentPlayer ().makeMove (move);
-                if (moveTransition.getMoveStatus ().isDone ()) {
-                    int eval = alphaBeta(moveTransition.getTransitionBoard (), depth - 1, alpha, beta, false);
-                    maxEval = Math.max (maxEval, eval);
-                    alpha = Math.max (alpha, eval);
-                    if (beta <= alpha) {
-                        break;
-                    }
-                }
-            }
-            return maxEval;
-        } else {
-            int minEval = Integer.MAX_VALUE;
-            for (final Move move : board.currentPlayer ().getLegalMoves ()) {
-                final MoveTransition moveTransition = board.currentPlayer ().makeMove (move);
-                if (moveTransition.getMoveStatus ().isDone ()) {
-                    int eval = alphaBeta(moveTransition.getTransitionBoard (), depth - 1, alpha, beta, true);
-                    minEval = Math.min (minEval, eval);
-                    beta = Math.min (beta, eval);
-                    if (beta <= alpha) {
-                        break;
-                    }
-                }
-            }
-            return minEval;
+        if (currentPlayer.getTeam().isWhite()) {
+            return "[score: " + highestSeenValue + "]";
+        } else if (currentPlayer.getTeam().isBlack()) {
+            return "[score: " + lowestSeenValue + "]";
         }
+        throw new RuntimeException("bad bad boy!");
+    }
+
+    public int max(final Board board,
+                    final int depth,
+                    final int highest,
+                    final int lowest) {
+        if (depth == 0 || BoardUtilities.isEndGame(board)) {
+            return Evaluator.evaluate(board, depth);
+        }
+        int currentHighest = highest;
+        for (final Move move : (board.currentPlayer().getLegalMoves())) {
+            final MoveTransition moveTransition = board.currentPlayer().makeMove(move);
+            if (moveTransition.getMoveStatus().isDone()) {
+                final Board toBoard = moveTransition.getTransitionBoard();
+                currentHighest = Math.max(currentHighest, min(toBoard,
+                        calculateQuiescenceDepth(toBoard, depth), currentHighest, lowest));
+                if (currentHighest >= lowest) {
+                    return lowest;
+                }
+            }
+        }
+        return currentHighest;
+    }
+
+    public int min(final Board board,
+                    final int depth,
+                    final int highest,
+                    final int lowest) {
+        if (depth == 0 || BoardUtilities.isEndGame(board)) {
+            return Evaluator.evaluate(board, depth);
+        }
+        int currentLowest = lowest;
+        for (final Move move : (board.currentPlayer().getLegalMoves())) {
+            final MoveTransition moveTransition = board.currentPlayer().makeMove(move);
+            if (moveTransition.getMoveStatus().isDone()) {
+                final Board toBoard = moveTransition.getTransitionBoard();
+                currentLowest = Math.min(currentLowest, max(toBoard,
+                        calculateQuiescenceDepth(toBoard, depth), highest, currentLowest));
+                if (currentLowest <= highest) {
+                    return highest;
+                }
+            }
+        }
+        return currentLowest;
+    }
+
+    private int calculateQuiescenceDepth(final Board toBoard,
+                                         final int depth) {
+        // todo: need to implement actual quiescence
+        return depth - 1;
     }
 }
-
 

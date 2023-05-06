@@ -42,6 +42,11 @@ public final class Queen extends Piece implements SlidingPiece {
     }
 
     @Override
+    public int locationBonus() {
+        return this.pieceTeam.queenBonus(this.piecePosition);
+    }
+
+    @Override
     public String toString () {
         return PieceType.QUEEN.toString ();
     }

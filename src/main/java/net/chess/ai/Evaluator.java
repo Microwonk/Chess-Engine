@@ -3,13 +3,16 @@ package net.chess.ai;
 import net.chess.engine.Team;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.BoardUtilities;
+import net.chess.engine.board.Move;
 import net.chess.engine.pieces.Pawn;
 import net.chess.engine.pieces.Piece;
+import net.chess.engine.player.Player;
 import net.chess.gui.Chess;
 
 import java.util.stream.Stream;
 
 import static net.chess.engine.pieces.Piece.PieceType;
+import static net.chess.engine.pieces.Piece.PieceType.BISHOP;
 
 /**
  * Evaluator for the Chess Board -> WIP VERRRY MUCH (so no Documentation yet)
@@ -18,272 +21,103 @@ import static net.chess.engine.pieces.Piece.PieceType;
  * @version 1.0
  */
 public class Evaluator {
-    private static final int WINNING_SCORE = 10000;
-    private static final int DRAW_SCORE = 0;
-    private static final int MOBILITY_BONUS = 5;
-    private static final int KING_SAFETY_BONUS = 700;
-    private static final int PAWN_CHAIN_BONUS = 25;
-    private static final int CONNECTED_PAWN_CHAIN_BONUS = 50;
-    private static final int ADVANCED_PAWN_CHAIN_BONUS = 25;
-    private static final int ISOLATED_PAWN_PENALTY = -30;
-    private static final int DOUBLED_PAWN_PENALTY = -20;
-    private static final int[] PASSED_PAWN_BONUS = {0, 5, 10, 15, 25, 50, 100};
-    private static final int CENTRAL_PAWN_BONUS = 200;
-    private static final int CENTRAL_PIECE_BONUS = 500;
+    private final static int CHECK_MATE_BONUS = 10000;
+    private final static int CHECK_BONUS = 45;
+    private final static int CASTLE_BONUS = 25;
+    private final static int MOBILITY_MULTIPLIER = 5;
+    private final static int ATTACK_MULTIPLIER = 1;
+    private final static int TWO_BISHOPS_BONUS = 25;
 
-    public static int evaluate (Board board) {
-        int score = evaluateMaterial(board)
-                + evaluateMobility(board)
-                + evaluateKingSafety(board)
-                + evaluateCenterControl(board);
-                //+ evaluatePawnStructure(board);
-        if (isCheckmate(board)) {
-            if (board.currentPlayer().isInCheck()) {
-                score -= WINNING_SCORE;
-            } else {
-                score += WINNING_SCORE;
-            }
-        } else if (Chess.get().isDrawByLackOfMaterial() || Chess.get().isDrawByRepetition()) {
-            if (Chess.get().getGameBoard().isGameOverStaleMate()) {
-                score = DRAW_SCORE;
-            }
-        }
-        return score;
+    public static int evaluate(final Board board,
+                        final int depth) {
+        return score(board.whitePlayer(), depth) - score(board.blackPlayer(), depth);
     }
 
-    private static int evaluateMaterial (Board board) {
-        int whiteScore = 0;
-        int blackScore = 0;
-        for (Piece piece : Stream.concat(board.getBlackPieces().stream(), board.getWhitePieces().stream()).toList()) {
-            if (piece.getPieceTeam() == Team.WHITE) {
-                whiteScore += piece.getPieceValue();
-            } else {
-                blackScore += piece.getPieceValue();
-            }
-        }
-        return whiteScore - blackScore;
+    public String evaluationDetails(final Board board, final int depth) {
+        return
+                ("White Mobility : " + mobility(board.whitePlayer()) + "\n") +
+                        "White kingThreats : " + kingThreats(board.whitePlayer(), depth) + "\n" +
+                        "White attacks : " + attacks(board.whitePlayer()) + "\n" +
+                        "White castle : " + castle(board.whitePlayer()) + "\n" +
+                        "White pieceEval : " + pieceEvaluations(board.whitePlayer()) + "\n" +
+                        "White pawnStructure : " + pawnStructure(board.whitePlayer()) + "\n" +
+                        "---------------------\n" +
+                        "Black Mobility : " + mobility(board.blackPlayer()) + "\n" +
+                        "Black kingThreats : " + kingThreats(board.blackPlayer(), depth) + "\n" +
+                        "Black attacks : " + attacks(board.blackPlayer()) + "\n" +
+                        "Black castle : " + castle(board.blackPlayer()) + "\n" +
+                        "Black pieceEval : " + pieceEvaluations(board.blackPlayer()) + "\n" +
+                        "Black pawnStructure : " + pawnStructure(board.blackPlayer()) + "\n\n" +
+                        "Final Score = " + evaluate(board, depth);
     }
 
-    private static int evaluateMobility (final Board board) {
-        int whiteMoves = board.currentPlayer().getLegalMoves().size();
-        int blackMoves = board.currentPlayer().getOpponent().getLegalMoves().size();
-        return MOBILITY_BONUS * (whiteMoves - blackMoves);
+    private static int score(final Player player,
+                             final int depth) {
+        return mobility(player) +
+                kingThreats(player, depth) +
+                attacks(player) +
+                castle(player) +
+                pieceEvaluations(player) +
+                pawnStructure(player);
     }
 
-    private static int evaluateKingSafety (final Board board) {
-        final int currentPlayerKingPosition = board.currentPlayer().getPlayerKing().getPosition();
-
-        // Check if the king is in check
-        if (board.currentPlayer().isInCheck()) {
-            return -KING_SAFETY_BONUS;
-        }
-
-        // Check if there are enemy pieces attacking the king's current position
-        final int kingAttackCount = BoardUtilities.getAttackCount(board.currentPlayer().getOpponent().getLegalMoves(), currentPlayerKingPosition);
-        if (kingAttackCount > 0) {
-            // Calculate the safety score based on the number of attacks and the position of the king
-            final int kingDistanceFromEdge = BoardUtilities.distanceFromEdge(currentPlayerKingPosition);
-            return (KING_SAFETY_BONUS * kingDistanceFromEdge) / kingAttackCount;
-        }
-
-        // Return a positive score if the king is safe
-        return KING_SAFETY_BONUS;
-    }
-
-    private static int evaluateCenterControl (final Board board) {
-        int centerControlBonus = 0;
-
-        // Count number of pieces on central squares
-        for (final Piece piece : board.currentPlayer().getActivePieces()) {
-            if (piece instanceof Pawn) {
-                if (BoardUtilities.IS_CENTRAL[piece.getPosition()]) {
-                    centerControlBonus += CENTRAL_PAWN_BONUS;
-                }
-            } else {
-                if (BoardUtilities.IS_CENTRAL[piece.getPosition()]) {
-                    centerControlBonus += CENTRAL_PIECE_BONUS;
+    private static int attacks(final Player player) {
+        int attackScore = 0;
+        for(final Move move : player.getLegalMoves()) {
+            if(move.isAttack()) {
+                final Piece movedPiece = move.getPiece();
+                final Piece attackedPiece = move.getAttackedPiece();
+                if(movedPiece.getPieceValue() <= attackedPiece.getPieceValue()) {
+                    attackScore++;
                 }
             }
         }
-        return centerControlBonus;
+        return attackScore * ATTACK_MULTIPLIER;
     }
 
-    private static int evaluatePawnStructure (final Board board) {
-        int pawnStructEval = 0;
-
-        pawnStructEval += evaluatePawnChain(board) + evaluateIsolatedPawn(board) + evaluateDoubledPawns(board);
-        //pawnStructEval += evaluateBackWardsPawns(); // both need to be implemented later
-        //pawnStructEval += evaluatePawnIslands();
-        return pawnStructEval;
+    private static int pieceEvaluations(final Player player) {
+        int pieceValuationScore = 0;
+        int numBishops = 0;
+        for (final Piece piece : player.getActivePieces()) {
+            pieceValuationScore += piece.getPieceValue() + piece.locationBonus();
+            if(piece.getPieceType() == BISHOP) {
+                numBishops++;
+            }
+        }
+        return pieceValuationScore + (numBishops == 2 ? TWO_BISHOPS_BONUS : 0);
     }
 
-    private static int evaluatePassedPawns (final Board board) {
-        int whitePassedPawns = 0;
-        int blackPassedPawns = 0;
-
-        for (final Piece pawn : board.currentPlayer().getActivePawns()) {
-            if (isPassedPawn(pawn)) {
-                if (BoardUtilities.getAttackCount(board.currentPlayer().getOpponent().getLegalMoves(), pawn.getPosition()) == 0) {
-                    // Passed pawn is not under attack
-                    if (pawn.getPieceTeam().isWhite()) {
-                        whitePassedPawns++;
-                    } else {
-                        blackPassedPawns++;
-                    }
-                }
-            }
-        }
-        return 0;
+    private static int mobility(final Player player) {
+        return MOBILITY_MULTIPLIER * mobilityRatio(player);
     }
 
-    private static boolean isPassedPawn (final Piece pawn) {
-        // TODO: implement a method to find out passed pawns
-        return false;
+    private static int mobilityRatio(final Player player) {
+        return (int)((player.getLegalMoves().size() * 10.0f) / player.getOpponent().getLegalMoves().size());
     }
 
-    private static int evaluateIsolatedPawn (final Board board) {
-        int isolatedPawns = 0;
-
-        for (final Piece pawn : board.currentPlayer().getActivePawns()) {
-            if (!isConnectedPawnChain(board, pawn.getPosition(), pawn.getPieceTeam()) && !hasNeighboringPawns(pawn, board)) {
-                isolatedPawns++;
-            }
-        }
-        return ISOLATED_PAWN_PENALTY * isolatedPawns;
+    private static int kingThreats(final Player player,
+                                   final int depth) {
+        return player.getOpponent().isInCheckmate() ? CHECK_MATE_BONUS  * depthBonus(depth) : check(player);
     }
 
-    private static boolean hasNeighboringPawns (final Piece pawn, final Board board) {
-        final int pawnFile = pawn.getPosition() % 8;
-
-        // Check for neighboring pawns on the same file
-        for (final Piece otherPawn : board.currentPlayer().getActivePawns()) {
-            if (otherPawn.getPosition() % 8 == pawnFile && otherPawn != pawn) {
-                return true;
-            }
-        }
-
-        // Check for neighboring pawns on adjacent files
-        final int[] adjacentFiles = {pawnFile - 1, pawnFile + 1};
-        for (final int file : adjacentFiles) {
-            if (file >= 0 && file < 8) {
-                for (final Piece otherPawn : board.currentPlayer().getActivePawns()) {
-                    if (otherPawn.getPosition() % 8 == file) {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
+    private static int check(final Player player) {
+        return player.getOpponent().isInCheck() ? CHECK_BONUS : 0;
     }
 
-    private static int evaluateDoubledPawns (final Board board) {
-        int doubledPawnCount = 0;
-        final int[] fileCount = new int[8];
-        for (final Piece pawn : board.currentPlayer().getActivePawns()) {
-            if (BoardUtilities.FIRST_COLUMN[pawn.getPosition()]) {
-                fileCount[0]++;
-            } else if (BoardUtilities.SECOND_COLUMN[pawn.getPosition()]) {
-                fileCount[1]++;
-            } else if (BoardUtilities.THIRD_COLUMN[pawn.getPosition()]) {
-                fileCount[2]++;
-            } else if (BoardUtilities.FOURTH_COLUMN[pawn.getPosition()]) {
-                fileCount[3]++;
-            } else if (BoardUtilities.FIFTH_COLUMN[pawn.getPosition()]) {
-                fileCount[4]++;
-            } else if (BoardUtilities.SIXTH_COLUMN[pawn.getPosition()]) {
-                fileCount[5]++;
-            } else if (BoardUtilities.SEVENTH_COLUMN[pawn.getPosition()]) {
-                fileCount[6]++;
-            } else if (BoardUtilities.EIGHTH_COLUMN[pawn.getPosition()]) {
-                fileCount[7]++;
-            }
-        }
-        for (final int count : fileCount) {
-            if (count > 1) {
-                doubledPawnCount += count;
-            }
-        }
-        return doubledPawnCount * DOUBLED_PAWN_PENALTY;
+    private static int depthBonus(final int depth) {
+        return depth == 0 ? 1 : 100 * depth;
     }
 
-    private static int evaluatePawnChain (final Board board) {
-        int pawnChainCount = 0;
-        int connectedPawnChainCount = 0;
-        int advancedPawnChainCount = 0;
-
-        for (final Piece pawn : board.currentPlayer().getActivePawns()) {
-            final int pawnRank = pawn.getPosition() / 8;
-
-            // Check for pawn chains
-            if (isPawnChain(board, pawn.getPosition(), pawn.getPieceTeam())) {
-                pawnChainCount++;
-                if (pawnRank >= 4) {
-                    advancedPawnChainCount++;
-                }
-            }
-
-            // Check for connected pawn chains
-            if (isConnectedPawnChain(board, pawn.getPosition(), pawn.getPieceTeam())) {
-                connectedPawnChainCount++;
-            }
-        }
-
-        // Calculate points based on the pawn chains
-        int pawnChainPoints = PAWN_CHAIN_BONUS * pawnChainCount;
-        int connectedPawnChainPoints = CONNECTED_PAWN_CHAIN_BONUS * connectedPawnChainCount;
-        int advancedPawnChainPoints = ADVANCED_PAWN_CHAIN_BONUS * advancedPawnChainCount;
-
-        return pawnChainPoints + connectedPawnChainPoints + advancedPawnChainPoints;
+    private static int castle(final Player player) {
+        return player.isCastled() ? CASTLE_BONUS : 0;
     }
 
-    private static boolean isPawnChain (final Board board, final int pawnPosition, final Team pawnTeam) {
-        final Piece pawn = board.getPiece(pawnPosition);
-        if (pawn.getPieceType() != PieceType.PAWN || pawn.getPieceTeam() != pawnTeam) {
-            return false;
-        }
-
-        // Check if the pawn is connected to a pawn of the same color either diagonally or vertically
-        final int[] candidateOffsets = {7, 8, 9};
-        for (final int candidateOffset : candidateOffsets) {
-            final int candidateDestination = pawnPosition + (pawnTeam.getDirection() * candidateOffset);
-            if (BoardUtilities.isValidSquareCoordinate(candidateDestination)) {
-                final Piece candidatePawn = board.getPiece(candidateDestination);
-                if (candidatePawn.getPieceType() == PieceType.PAWN && candidatePawn.getPieceTeam() == pawnTeam) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+    private static int pawnStructure(final Player player) {
+        return PawnStructureAnalyzer.get().pawnStructureScore(player);
     }
 
-    private static boolean isConnectedPawnChain (final Board board, final int pawnPosition, final Team pawnTeam) {
-        if (!isPawnChain(board, pawnPosition, pawnTeam)) {
-            return false;
-        }
-
-        // Check if the pawn chain is connected to another pawn chain of the same color on either side
-        final int[] candidateOffsets = {1, -1};
-        for (final int candidateOffset : candidateOffsets) {
-            int candidateDestination = pawnPosition + (pawnTeam.getDirection() * candidateOffset);
-            while (BoardUtilities.isValidSquareCoordinate(candidateDestination)) {
-                final Piece candidatePawn = board.getPiece(candidateDestination);
-                if (candidatePawn.getPieceType() == PieceType.PAWN && candidatePawn.getPieceTeam() == pawnTeam) {
-                    if (isPawnChain(board, candidateDestination, pawnTeam)) {
-                        return true;
-                    }
-                } else {
-                    break;
-                }
-                candidateDestination += (pawnTeam.getDirection() * candidateOffset);
-            }
-        }
-        return false;
-    }
-
-    private static boolean isCheckmate (final Board board) {
-        return board.currentPlayer().isInCheckmate() || board.currentPlayer().getOpponent().isInCheckmate();
+    private static int kingSafety(final Player player) {
+        final KingSafetyAnalyzer.KingDistance kingDistance = KingSafetyAnalyzer.get().calculateKingTropism(player);
+        return ((kingDistance.getEnemyPiece().getPieceValue() / 100) * kingDistance.getDistance());
     }
 }
-

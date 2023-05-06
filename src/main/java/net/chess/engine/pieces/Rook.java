@@ -41,6 +41,10 @@ public final class Rook extends Piece implements SlidingPiece {
     }
 
     @Override
+    public int locationBonus() {
+        return this.pieceTeam.rookBonus(this.piecePosition);
+    }
+    @Override
     public String toString () {
         return PieceType.ROOK.toString();
     }
