@@ -5,7 +5,7 @@ import net.chess.engine.pieces.Piece;
 
 import javax.swing.*;
 
-import static net.chess.gui.util.Properties.defArtPath;
+import static net.chess.gui.util.Variables.defArtPath;
 
 /**
  * Popup dialog for Promoting a Promotion Pawn

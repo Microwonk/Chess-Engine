@@ -3,7 +3,6 @@ package net.chess.engine.board;
 import net.chess.engine.Team;
 import net.chess.engine.pieces.*;
 import net.chess.exception.ChessException;
-import net.chess.gui.Chess;
 
 import java.lang.reflect.Array;
 import java.util.*;

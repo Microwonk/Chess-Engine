@@ -10,7 +10,7 @@ import javax.sound.sampled.Mixer;
 import javax.sound.sampled.Port;
 import java.io.*;
 
-import static net.chess.gui.util.Properties.soundOn;
+import static net.chess.gui.util.Variables.soundOn;
 
 /**
  * Audio Handler using JLayer library

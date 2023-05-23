@@ -2,7 +2,7 @@ package net.chess.gui;
 
 import net.chess.gui.audio.AudioHandler;
 import net.chess.gui.util.ColorPack;
-import net.chess.gui.util.Properties;
+import net.chess.gui.util.Variables;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -99,7 +99,7 @@ public class SettingsDialog extends JDialog {
 
         public GeneralPanel(LayoutManager layout) {
             super(layout);
-            JSlider volumeSlider = new JSlider(JSlider.VERTICAL, 0, 100, (int) (Properties.volume * 100));
+            JSlider volumeSlider = new JSlider(JSlider.VERTICAL, 0, 100, (int) (Variables.volume * 100));
             volumeSlider.addChangeListener(this);
             volumeSlider.setBorder(BorderFactory.createEmptyBorder(0,5,0,10));
             add(volumeSlider, BorderLayout.EAST);
@@ -123,7 +123,7 @@ public class SettingsDialog extends JDialog {
             JSlider source = (JSlider) e.getSource();
             if (!source.getValueIsAdjusting()) {
                 AudioHandler.setSystemVolume(source.getValue() / 100f);
-                Properties.store("volume", String.valueOf(source.getValue() / 100f));
+                Variables.store("volume", String.valueOf(source.getValue() / 100f));
             }
         }
     }
@@ -152,7 +152,7 @@ public class SettingsDialog extends JDialog {
             sidePanel.setLayout(new BoxLayout(sidePanel, BoxLayout.Y_AXIS));
             sidePanel.setPreferredSize(new Dimension(100, getHeight()));
             sidePanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 20, 10));
-            for (ColorPack cp: Properties.defaultColorPacks) {
+            for (ColorPack cp: Variables.defaultColorPacks) {
                 JButton menuItem = new JButton(cp.name());
                 menuItem.setSize(new Dimension(sidePanel.getPreferredSize().width / 2, 20));
                 menuItem.setAlignmentX(Component.LEFT_ALIGNMENT);

@@ -1,5 +1,7 @@
 package net.chess.gui.util;
 
+import net.chess.engine.board.Square;
+import net.chess.engine.pieces.Piece;
 import net.chess.gui.audio.AudioHandler;
 
 import java.awt.*;
@@ -10,7 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class Properties {
+public class Variables {
 
     //TODO: let user change .properties in settings menu -> properties profiles and so on
 
@@ -35,6 +37,13 @@ public class Properties {
     public static ArtPack artPack;
     public static float volume;
 
+    // running game Variables
+    public static boolean movingEnabled;
+    public static Square sourceSquare;
+    public static Square destinationSquare;
+    public static Piece movedPiece;
+    public static int currentMove;
+
     static {
         try {
             properties.load(new FileReader("config/config.properties"));
@@ -51,6 +60,8 @@ public class Properties {
         colorPack = getColorPackByName(properties.getProperty("colorPack"));
         artPack = getArtPackByName(properties.getProperty("artPack"));
         volume = Float.parseFloat(properties.getProperty("volume"));
+        movingEnabled = true;
+        currentMove = 0;
     }
 
     public static void store(String key, String value) {

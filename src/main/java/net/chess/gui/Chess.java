@@ -1,19 +1,12 @@
 package net.chess.gui;
 
-import net.chess.ai.AI;
-import net.chess.ai.AlphaBeta.AlphaBeta;
-import net.chess.ai.AlphaBeta.AlphaBetaMultiThreaded;
 import net.chess.engine.board.Board;
 import net.chess.engine.board.BoardUtilities;
 import net.chess.engine.board.Move;
-import net.chess.engine.board.Square;
 import net.chess.engine.pieces.*;
 import net.chess.engine.board.MoveTransition.MoveStatus;
-import net.chess.engine.board.MoveTransition;
 import net.chess.gui.audio.AudioHandler;
-import net.chess.gui.observer.Observable;
-import net.chess.gui.observer.Observer;
-import net.chess.gui.util.Properties;
+import net.chess.gui.util.Variables;
 import net.chess.parsing.FenParser;
 
 import javax.imageio.ImageIO;
@@ -28,14 +21,8 @@ import java.util.List;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static javax.swing.SwingUtilities.isLeftMouseButton;
-import static javax.swing.SwingUtilities.isRightMouseButton;
-import static net.chess.engine.board.Move.PawnMove;
 import static net.chess.engine.board.Move.PawnPromotion;
-import static net.chess.engine.pieces.Piece.PieceType;
-import static net.chess.gui.util.Properties.*;
-
-// general TODO: fix the toString method of all moves
+import static net.chess.gui.util.Variables.*;
 
 /**
  * Container for all the GUI Content Management and Connection of all the Components -> Singleton type
@@ -43,7 +30,7 @@ import static net.chess.gui.util.Properties.*;
  * @author Nicolas Frey
  * @version 1.0
  */
-public class Chess extends Observable {
+public class Chess {
 
     private final JFrame frame;
     private final ChessBoard chessBoard;
@@ -60,17 +47,11 @@ public class Chess extends Observable {
 
     private final ArrayList <String> positionLog; // for repetition
     // for moving with mouse clicking
-    private Square sourceSquare;
-    private Square destinationSquare;
-    private Piece movedPiece;
 
     private BoardDirection boardDirection;
-    private int currentMove;
-    private boolean movingEnabled;
-
 
     // instantiating the Singleton
-    private static final Chess INSTANCE = new Chess();
+    protected static final Chess CHESS = new Chess();
 
     private Chess () {
         this.frame = new JFrame("森 Mori Chess ~dev");
@@ -79,12 +60,9 @@ public class Chess extends Observable {
         this.boardDirection = BoardDirection.NORMAL;
         this.positionLog = new ArrayList <>();
         this.moveLog = new MoveLog();
-        this.addObserver(new GameObserver());
         this.gameDialog = new GameDialog(this.frame);
         this.logger = new Logger();
         this.leftPanel = new RecentGamesPlayed();
-        this.currentMove = 0;
-        this.movingEnabled = true;
 
         // TODO: make user choose own art
         this.frame.setLayout(new BorderLayout());
@@ -116,15 +94,15 @@ public class Chess extends Observable {
 
         this.frame.addKeyListener(new HotKeys());
         this.frame.setVisible(true);
-        Properties.init();
+        Variables.init();
     }
 
     public void update() {
-        Chess.get().getChessBoard().drawBoard(Chess.get().getGameBoard());
+        chessBoard.drawBoard(board);
     }
 
     public static Chess get () {
-        return INSTANCE;
+        return CHESS;
     }
 
     private GameDialog getGame () {
@@ -139,10 +117,23 @@ public class Chess extends Observable {
         return this.board;
     }
 
+    public List <String> getPositionLog () {
+        return positionLog;
+    }
+
+    public JFrame getFrame () {
+        return this.frame;
+    }
+
     public void show () {
         Chess.get().getMoveLog().clear();
         Chess.get().getTakenPieces().refresh(Chess.get().getMoveLog());
         Chess.get().getChessBoard().drawBoard(Chess.get().getGameBoard());
+    }
+
+    public void draw() {
+        takenPieces.refresh(CHESS.getMoveLog());
+        chessBoard.drawBoard(board);
     }
 
     /**
@@ -207,7 +198,7 @@ public class Chess extends Observable {
         try {
             final BufferedReader reader = new BufferedReader(new FileReader(selectedFile));
             this.board = FenParser.createGameFromFen(reader.readLine());
-            Properties.store("savePath", selectedFile.getAbsolutePath());
+            Variables.store("savePath", selectedFile.getAbsolutePath());
             reader.close();
 
             this.chessBoard.drawBoard(this.board);
@@ -239,7 +230,7 @@ public class Chess extends Observable {
         try {
             final BufferedWriter bw = new BufferedWriter(new FileWriter(selectedFile));
             bw.write(toSave);
-            Properties.store("savePath", selectedFile.getPath());
+            Variables.store("savePath", selectedFile.getPath());
             bw.close();
         } catch (Exception e) {
             logger.printLog(String.valueOf(e));
@@ -276,7 +267,7 @@ public class Chess extends Observable {
         legalMovesToggle.setFont(frame.getFont());
         legalMovesToggle.addActionListener(e -> {
             highlightLegalMovesActive = legalMovesToggle.isSelected();
-            Properties.store("highlightLegalMovesActive", highlightLegalMovesActive ? "true" : "false");
+            Variables.store("highlightLegalMovesActive", highlightLegalMovesActive ? "true" : "false");
             chessBoard.drawBoard(board);
         });
 
@@ -285,7 +276,7 @@ public class Chess extends Observable {
         checksToggle.setFont(frame.getFont());
         checksToggle.addActionListener(e -> {
             signifyChecksActive = checksToggle.isSelected();
-            Properties.store("signifyChecksActive", signifyChecksActive ? "true" : "false");
+            Variables.store("signifyChecksActive", signifyChecksActive ? "true" : "false");
             chessBoard.drawBoard(board);
         });
 
@@ -294,7 +285,7 @@ public class Chess extends Observable {
         soundToggle.setFont(frame.getFont());
         soundToggle.addActionListener(e -> {
             soundOn = soundToggle.isSelected();
-            Properties.store("soundOn", soundOn ? "true" : "false");
+            Variables.store("soundOn", soundOn ? "true" : "false");
             chessBoard.drawBoard(board);
         });
 
@@ -313,8 +304,7 @@ public class Chess extends Observable {
         final JMenu optionsMenu = new JMenu("Options");
         final JMenuItem setupGame = new JMenuItem("Setup Game");
         setupGame.addActionListener(e -> {
-            Chess.get().getGame().promptUser(Chess.get().frame);
-            Chess.get().gameUpdate(Chess.get().getGame());
+            CHESS.getGame().promptUser(Chess.get().frame);
         });
         setupGame.setFont(frame.getFont());
         optionsMenu.add(setupGame);
@@ -322,110 +312,21 @@ public class Chess extends Observable {
         return optionsMenu;
     }
 
-    /**
-     * @param gameDialog to notify all Subscribers
-     */
-    private void gameUpdate (final GameDialog gameDialog) {
-        notifyObservers(gameDialog);
-    }
-
     public void setChessBoard (final Board board) {
         this.board = board;
     }
 
-    /**
-     * Game Subscriber
-     */
-    private static class GameObserver implements Observer {
-
-        @Override
-        public void update (Observable o, Object arg) {
-            if (Chess.get().getGame().isAIPlayer(Chess.get().getGameBoard().currentPlayer())
-                    && !Chess.get().getGameBoard().currentPlayer().isInCheckmate()
-                    && !Chess.get().isDrawByLackOfMaterial()
-                    && !Chess.get().isDrawByRepetition()) {
-                // execute the AI
-                final backGroundThreadForAI thread = new backGroundThreadForAI();
-                thread.execute();
-
-                if (Chess.get().getGameBoard().currentPlayer().isInCheckmate()) {
-                    Chess.get().logger.printLog("game over, " + Chess.get().getGameBoard().currentPlayer() + " is in checkmate!");
-                }
-
-                if (Chess.get().getGameBoard().currentPlayer().isInStalemate()) {
-                    Chess.get().logger.printLog("game over, " + Chess.get().getGameBoard().currentPlayer() + " is in stalemate!");
-                }
-            }
-        }
-    }
-
-    /**
-     * SwingWorker using threads to do the work in the background instead of the thread of the gui
-     */
-    private static class backGroundThreadForAI extends SwingWorker <Move, String> {
-        private backGroundThreadForAI () {}
-
-        // what should be done in the background thread
-        @Override
-        protected Move doInBackground () {
-            //final AI miniMax = new Minimax(GUI_Contents.get().gameDialog.getSearchDepth());
-            final AI alphaBeta = new AlphaBetaMultiThreaded(Chess.get().gameDialog.getSearchDepth());
-            final Move move = alphaBeta.execute(Chess.get().getGameBoard());
-
-            if (move.isAttack()) {
-                AudioHandler.playSound(1);
-            } else {
-                AudioHandler.playSound(0);
-            }
-            return move;
-        }
-
-        @Override
-        protected void done () {
-            try {
-                final Move executedMove = get();
-                Chess.get().updateGameBoard(Chess.get().getGameBoard().currentPlayer().makeMove(executedMove).getTransitionBoard());
-                Chess.get().getMoveLog().addMove(executedMove);
-                Chess.get().getPositionLog().add(FenParser.parseFen(executedMove.getBoard()));
-                Chess.get().getTakenPieces().refresh(Chess.get().getMoveLog());
-                Chess.get().getChessBoard().drawBoard(Chess.get().getGameBoard());
-                Chess.get().moveMadeUpdate(PlayerType.COMPUTER);
-            } catch (Exception e) {
-                Chess.get().logger.printLog("Execution failed...");
-            }
-            super.done();
-        }
-    }
-
-    /**
-     * @param playerType to notify the subscriber of the new Player-type
-     */
-    private void moveMadeUpdate (final PlayerType playerType) {
-        notifyObservers(playerType);
-    }
 
     ChessBoard getChessBoard () {
         return this.chessBoard;
     }
 
-    private TakenPieces getTakenPieces () {
+    TakenPieces getTakenPieces () {
         return this.takenPieces;
     }
 
     public MoveLog getMoveLog () {
         return this.moveLog;
-    }
-
-    private ArrayList <String> getPositionLog () {
-        return this.positionLog;
-    }
-
-
-    /**
-     * @param board Board to update Board outside of Singleton
-     */
-    public void updateGameBoard (final Board board) {
-        this.board = board;
     }
 
     /**
@@ -450,7 +351,7 @@ public class Chess extends Observable {
         if (this.moveLog.getMoves().isEmpty()) {
             return;
         }
-        this.movingEnabled = false;
+        movingEnabled = false;
         currentMove = 0;
         chessBoard.drawBoard(this.moveLog.getMoves().get(0).getBoard());
         AudioHandler.playSound(0);
@@ -460,7 +361,7 @@ public class Chess extends Observable {
      * visualizes the end board with sound
      */
     protected void endBoard () {
-        this.movingEnabled = true;
+        movingEnabled = true;
         if (currentMove == this.moveLog.size() - 1
                 || this.moveLog.getMoves().isEmpty()) {
             return;
@@ -477,7 +378,7 @@ public class Chess extends Observable {
         if (currentMove > 0 && this.moveLog != null && this.moveLog.size() > 0) {
             currentMove--;
             chessBoard.drawBoard(this.moveLog.getMoves().get(currentMove).getBoard());
-            this.movingEnabled = false;
+            movingEnabled = false;
 
             if (this.moveLog.getMoves().get(currentMove).isAttack()) {
                 AudioHandler.playSound(1);
@@ -486,7 +387,7 @@ public class Chess extends Observable {
             }
 
         } else {
-            this.movingEnabled = true;
+            movingEnabled = true;
         }
     }
 
@@ -500,7 +401,7 @@ public class Chess extends Observable {
                     AudioHandler.playSound(1);
                 } else AudioHandler.playSound(0);
                 currentMove++;
-                this.movingEnabled = true;
+                movingEnabled = true;
                 chessBoard.drawBoard(this.board);
             } else {
                 if (this.moveLog.getMoves().get(currentMove).isAttack()) {
@@ -508,7 +409,7 @@ public class Chess extends Observable {
                 } else AudioHandler.playSound(0);
                 currentMove++;
                 chessBoard.drawBoard(this.moveLog.getMoves().get(currentMove).getBoard());
-                this.movingEnabled = false;
+                movingEnabled = false;
             }
 
         }
@@ -521,10 +422,10 @@ public class Chess extends Observable {
         if (this.board.getBlackPieces().size() <= 2 && this.board.getWhitePieces().size() <= 2) {
             if ((this.board.getBlackPieces().stream().anyMatch(piece -> piece instanceof Bishop || piece instanceof Knight) || this.board.getBlackPieces().size() == 1)
                     && (this.board.getWhitePieces().stream().anyMatch(piece -> piece instanceof Bishop || piece instanceof Knight) || this.board.getWhitePieces().size() == 1)) {
-                this.movingEnabled = false;
+                movingEnabled = false;
                 return true;
             } else if (this.board.getBlackPieces().size() == 1 && this.board.getWhitePieces().size() == 1) {
-                this.movingEnabled = false;
+                movingEnabled = false;
                 return true;
             }
         }
@@ -647,140 +548,13 @@ public class Chess extends Observable {
                 logger.printLog(e.toString());
             }
 
-            addMouseListener(createMouseListener());
+            addMouseListener(new Controller(squareID));
             validate();
         }
-
-        /**
-         * @return MouseListener for managing moves made by user
-         */
-        private MouseListener createMouseListener () {
-            return new MouseAdapter() {
-                @Override
-                public void mouseClicked (MouseEvent e) {
-                    if (!movingEnabled) {
-                        return;
-                    }
-                    if (isLeftMouseButton(e)) {
-                        if (sourceSquare == null) {
-                            firstClick();
-                        } else {
-                            secondClick();
-                        }
-                        SwingUtilities.invokeLater(() -> {
-                            takenPieces.refresh(moveLog);
-                            chessBoard.drawBoard(board);
-                            if (gameDialog.isAIPlayer(board.currentPlayer())) {
-                                Chess.get().moveMadeUpdate(PlayerType.HUMAN);
-                            }
-                        });
-                    } else if (isRightMouseButton(e)) {
-                        sourceSquare = null;
-                        destinationSquare = null;
-                        movedPiece = null;
-                        SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
-                    }
-                }
-                private void firstClick() {
-                    sourceSquare = board.getSquare(squareID);
-                    movedPiece = sourceSquare.getPiece();
-                    // if clicked on empty square, do nothing
-                    if (movedPiece == null) {
-                        sourceSquare = null;
-                    } else if (movedPiece.getPieceTeam() != board.currentPlayer().getTeam()) {
-                        sourceSquare = null;
-                    }
-                }
-
-                private void secondClick() {
-                    destinationSquare = board.getSquare(squareID);
-                    // if same square is clicked, reset
-                    if (sourceSquare == destinationSquare) {
-                        sourceSquare = null;
-                        destinationSquare = null;
-                        movedPiece = null;
-                        SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
-                        return;
-                    }
-                    // if the square that is clicked has the same color piece on it
-                    // , it will jump into that square clicked -> quality of Life
-                    if (!(destinationSquare instanceof Square.EmptySquare) && destinationSquare.getPiece().getPieceTeam() == movedPiece.getPieceTeam()) {
-                        sourceSquare = board.getSquare(squareID);
-                        movedPiece = sourceSquare.getPiece();
-                        destinationSquare = null;
-                        SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
-                        return;
-                    }
-                    if (destinationSquare.equals(sourceSquare)) {
-                        sourceSquare = null;
-                        destinationSquare = null;
-                        SwingUtilities.invokeLater(() -> chessBoard.drawBoard(board));
-                        return;
-                    }
-                    final Move move;
-                    if (movedPiece.getPieceTeam().isPawnPromotionSquare(destinationSquare.getSquareCoordinate())
-                            && movedPiece instanceof Pawn
-                            && movedPiece.getPieceTeam().isAboutToPromoteSquare(movedPiece.getPosition())) {
-
-                        final PromotionDialog pD = new PromotionDialog(frame, movedPiece.getPieceTeam());
-                        final Piece promotionPiece;
-                        if (pD.getSelectedPieceType() == PieceType.QUEEN) {
-                            promotionPiece = new Queen(movedPiece.getPosition()
-                                    , movedPiece.getPieceTeam()
-                                    , false);
-                        } else if (pD.getSelectedPieceType() == PieceType.ROOK) {
-                            promotionPiece = new Rook(movedPiece.getPosition()
-                                    , movedPiece.getPieceTeam()
-                                    , false);
-                        } else if (pD.getSelectedPieceType() == PieceType.BISHOP) {
-                            promotionPiece = new Bishop(movedPiece.getPosition()
-                                    , movedPiece.getPieceTeam()
-                                    , false);
-                        } else if (pD.getSelectedPieceType() == PieceType.KNIGHT) {
-                            promotionPiece = new Knight(movedPiece.getPosition()
-                                    , movedPiece.getPieceTeam()
-                                    , false);
-                        } else {
-                            // if it is "X"d away
-                            sourceSquare = null;
-                            destinationSquare = null;
-                            movedPiece = null;
-                            return;
-                        }
-                        move = new PawnPromotion(
-                                new PawnMove(board, movedPiece, destinationSquare.getSquareCoordinate()), promotionPiece);
-                    } else {
-                        move = Move.MoveFactory.createMove(board
-                                , sourceSquare.getSquareCoordinate()
-                                , destinationSquare.getSquareCoordinate());
-                    }
-                    final MoveTransition transition = board.currentPlayer().makeMove(move);
-                    if (transition.getMoveStatus().isDone()) {
-                        if (move.isAttack()) {
-                            AudioHandler.playSound(1);
-                        } else if (transition.getTransitionBoard().blackPlayer().isInCheckmate()
-                                || transition.getTransitionBoard().whitePlayer().isInCheckmate()) {
-                            AudioHandler.playSound(2);
-                        } else {
-                            AudioHandler.playSound(0);
-                        }
-                        currentMove++;
-                        board = transition.getTransitionBoard();
-                        moveLog.addMove(move);
-                        logger.printLog(move.toString());
-                        positionLog.add(FenParser.parseFen(transition.getTransitionBoard()));
-                    }
-                    sourceSquare = null;
-                    destinationSquare = null;
-                    movedPiece = null;
-                }
-            };
-        }
-
         /**
          * @param board to get the Piece that is on the Square to generate an image
          */
-        private void assignSquareIcon (final Board board) throws Exception {
+        private void assignSquareIcon (final Board board) {
             this.removeAll();
             if (board.getSquare(this.squareID).isOccupied()) {
                 add(new JLabel(artPack.load(board.getSquare(this.squareID)
@@ -811,21 +585,12 @@ public class Chess extends Observable {
          */
         private Collection <Move> pieceLegalMoves (final Board board) {
             if (movedPiece != null && movedPiece.getPieceTeam() == board.currentPlayer().getTeam()) {
-                return movedPiece.calcLegalMoves(board).stream().filter
-                        (move -> {
-                            if (board.currentPlayer().makeMove(move).getMoveStatus() == MoveStatus.DONE) {
-                                if (move instanceof PawnPromotion) {
-                                    // Check if the move is a pawn promotion move
-                                    // and if so, only allow one of the four possible promotion moves
-                                    Piece promotedPiece = ((PawnPromotion) move).getPromotedToPiece();
-                                    return promotedPiece instanceof Bishop;
-                                }
-                                return true;
-                            }
-                            return false;
-                        }).collect(Collectors.toList());
+                return movedPiece.calcLegalMoves(board).stream()
+                        .filter(move -> board.currentPlayer().makeMove(move).getMoveStatus() == MoveStatus.DONE)
+                        .filter(move -> !(move instanceof PawnPromotion) || ((PawnPromotion) move).getPromotedToPiece() instanceof Queen)
+                        .collect(Collectors.toList());
             }
-            // if we are clicking on a piece that is not ours e.g.
+            // if we are clicking on a piece that is not ours
             return Collections.emptyList();
         }
 
@@ -836,7 +601,7 @@ public class Chess extends Observable {
             if (!signifyChecksActive || moveLog.size() < 1) return;
 
             Color red = new Color(152, 40, 0);
-            // note: this code is written this way because otherwise there would be method overloading, which makes it throw a no King error. :(
+            // note: this code is written this way because otherwise there would be method overloading, which makes it throw a no King error.:(
             if (board.blackPlayer().isInCheck()) {
                 if (!board.blackPlayer().isInCheckmate()) {
                     red = red.brighter();
@@ -851,21 +616,21 @@ public class Chess extends Observable {
                 if (board.whitePlayer().getPlayerKing().getPosition() == this.squareID) {
                     this.setBackground(red);
                 }
-            } else if (board.blackPlayer().isInStalemate()) {
-                if (board.blackPlayer().getPlayerKing().getPosition() == this.squareID) {
-                    this.setBackground(Color.GRAY);
-                }
-            } else if (board.whitePlayer().isInStalemate()) {
-                if (board.whitePlayer().getPlayerKing().getPosition() == this.squareID) {
-                    this.setBackground(Color.GRAY);
-                }
-            } else if (isDrawByLackOfMaterial() || isDrawByRepetition()) {
-                if (board.whitePlayer().getPlayerKing().getPosition() == this.squareID
-                        || board.blackPlayer().getPlayerKing().getPosition() == this.squareID) {
+            } else if (board.blackPlayer().isInStalemate()
+                    && board.blackPlayer().getPlayerKing().getPosition() == this.squareID) {
+                this.setBackground(Color.GRAY);
+
+            } else if (board.whitePlayer().isInStalemate()
+                    && board.whitePlayer().getPlayerKing().getPosition() == this.squareID) {
+                this.setBackground(Color.GRAY);
+
+            } else if (isDrawByLackOfMaterial() || isDrawByRepetition()
+                    && (board.whitePlayer().getPlayerKing().getPosition() == this.squareID
+                    || board.blackPlayer().getPlayerKing().getPosition() == this.squareID)) {
                     this.setBackground(Color.GRAY);
                 }
             }
-        }
+
 
         /**
          * @return the Color of the Square
