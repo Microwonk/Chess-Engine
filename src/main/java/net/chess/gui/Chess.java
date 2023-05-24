@@ -39,9 +39,8 @@ public class Chess {
     private final RecentGamesPlayed leftPanel;
     private Board board;
     private final MoveLog moveLog;
-    private final GameDialog gameDialog;
     private SettingsDialog settingsDialog;
-    private final static Dimension FRAME_DIMENSION = new Dimension(800, 640);
+    private final static Dimension FRAME_DIMENSION = new Dimension(1000, 640);
     private final Dimension CHESS_BOARD_DIMENSION = new Dimension(400, 400);
     private final Dimension SQUARE_DIMENSION = new Dimension(50, 50);
 
@@ -51,22 +50,21 @@ public class Chess {
     private BoardDirection boardDirection;
 
     // instantiating the Singleton
-    protected static final Chess CHESS = new Chess();
+    public static final Chess CHESS = new Chess();
 
     private Chess () {
-        this.frame = new JFrame("森 Mori Chess ~dev");
+        this.frame = new JFrame(TITLE);
         this.frame.setMinimumSize(FRAME_DIMENSION);
         this.board = Board.createStandardBoard();
         this.boardDirection = BoardDirection.NORMAL;
         this.positionLog = new ArrayList <>();
         this.moveLog = new MoveLog();
-        this.gameDialog = new GameDialog(this.frame);
         this.logger = new Logger();
         this.leftPanel = new RecentGamesPlayed();
 
         // TODO: make user choose own art
         this.frame.setLayout(new BorderLayout());
-        this.frame.setFont(new Font("Minecraft", Font.BOLD, 13));
+        this.frame.setFont(new Font("Helvetica", Font.BOLD, 13));
         this.chessBoard = new ChessBoard();
         this.frame.add(this.chessBoard, BorderLayout.CENTER);
         this.takenPieces = new TakenPieces();
@@ -83,10 +81,13 @@ public class Chess {
         this.frame.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
-                int width = frame.getWidth() - (chessBoard.getPreferredSize().width +14) + (chessBoard.getPreferredSize().height - chessBoard.getHeight());
+                int width = (frame.getWidth() -
+                        (chessBoard.getPreferredSize().width +14) +
+                        (chessBoard.getPreferredSize().height - chessBoard.getHeight())) / 4;
+
                 int height = frame.getHeight();
-                logger.setPreferredSize(new Dimension(width / 2, height));
-                leftPanel.setPreferredSize(new Dimension(width/2, height));
+                logger.setPreferredSize(new Dimension((int) (width * 2), height)); // if needed can resize the ratio
+                leftPanel.setPreferredSize(new Dimension((int) (width * 2), height));
                 logger.revalidate();
                 leftPanel.revalidate();
             }
@@ -97,16 +98,13 @@ public class Chess {
         Variables.init();
     }
 
-    public void update() {
+    public void update(final Board board) {
+        this.board = board;
         chessBoard.drawBoard(board);
     }
 
     public static Chess get () {
         return CHESS;
-    }
-
-    private GameDialog getGame () {
-        return this.gameDialog;
     }
 
     public Logger getLogger() {
@@ -144,7 +142,7 @@ public class Chess {
         menuBar.setBackground(Color.WHITE);
         menuBar.add(createFileMenu());
         menuBar.add(createSettingsMenu());
-        menuBar.add(createOptionsMenu());
+        menuBar.add(createOnlineMenu());
         return menuBar;
     }
 
@@ -217,8 +215,6 @@ public class Chess {
         fileChooser.setSelectedFile(new File(savePath +
                 DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss")
                         .format(LocalDateTime.now()) + ".fen"));
-        fileChooser.addChoosableFileFilter(new FileNameExtensionFilter
-                ("FEN-file, PGN-file", "*.fen", "*.pgn"));
 
         int result = fileChooser.showSaveDialog(this.frame);
         if (result == JFileChooser.APPROVE_OPTION) {
@@ -297,19 +293,22 @@ public class Chess {
         return settingsMenu;
     }
 
-    /**
-     * @return GUI OptionsMenu
-     */
-    private JMenu createOptionsMenu () {
-        final JMenu optionsMenu = new JMenu("Options");
-        final JMenuItem setupGame = new JMenuItem("Setup Game");
-        setupGame.addActionListener(e -> {
-            CHESS.getGame().promptUser(Chess.get().frame);
+    private JMenu createOnlineMenu () {
+        final JMenu onlineMenu = new JMenu("Online");
+        final JMenuItem host = new JMenuItem("Host game");
+        final JMenuItem join = new JMenuItem("Join game");
+
+        host.setFont(frame.getFont());
+        onlineMenu.setFont(frame.getFont());
+        join.setFont(frame.getFont());
+
+        host.addActionListener(e -> {
+
         });
-        setupGame.setFont(frame.getFont());
-        optionsMenu.add(setupGame);
-        optionsMenu.setFont(frame.getFont());
-        return optionsMenu;
+
+        onlineMenu.add(host);
+        onlineMenu.add(join);
+        return onlineMenu;
     }
 
     public void setChessBoard (final Board board) {
@@ -523,14 +522,6 @@ public class Chess {
     }
 
     /**
-     * Computer or Human Player enum
-     */
-    protected enum PlayerType {
-        HUMAN,
-        COMPUTER
-    }
-
-    /**
      * A single Square on the Board
      */
     private class SquarePanel extends JPanel {
@@ -630,7 +621,6 @@ public class Chess {
                     this.setBackground(Color.GRAY);
                 }
             }
-
 
         /**
          * @return the Color of the Square

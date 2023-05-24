@@ -2,12 +2,12 @@ package net.chess.parsing;
 
 import net.chess.engine.board.Board;
 import net.chess.engine.board.Move;
+import net.chess.exception.BadMoveException;
 import net.chess.exception.ChessParsingException;
-import net.chess.gui.util.Loadable;
+import net.chess.exception.InvalidCharacterSequenceException;
 import net.chess.gui.Chess.MoveLog;
-import net.chess.gui.util.Savable;
 
-public class PGNParser implements Loadable<MoveLog>, Savable <String> {
+public class PGNParser {
     public static String parsePGN(final MoveLog moveLog) {
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < moveLog.size(); i++) {
@@ -21,8 +21,8 @@ public class PGNParser implements Loadable<MoveLog>, Savable <String> {
         final MoveLog moveLog = new MoveLog();
         String[] moves = pgn.replaceAll("\\d{1,3}\\.", "").split("\n");
         Board board = Board.createStandardBoard();
-        for (int i = 0; i < moves.length; i++) {
-            Move add = parseMove(board, moves[i]);
+        for (String move : moves) {
+            Move add = parseMove(board, move);
             moveLog.add(add);
             board = board.currentPlayer().makeMove(add).getTransitionBoard();
         }
@@ -31,19 +31,13 @@ public class PGNParser implements Loadable<MoveLog>, Savable <String> {
 
     public static Move parseMove(final Board board, final String move) throws ChessParsingException {
         try {
-            return board.getAllLegalMoves().stream().filter(m -> m.toString().equals(move)).toList().get(0);
+            return board.getAllLegalMoves().stream().filter(m -> m.toString().equals(move)).findFirst().orElseThrow();
         } catch (Exception e) {
-            throw new ChessParsingException("Invalid Move or Null given");
+            if (!move.matches("^[a-h][1-8][a-h][1-8][qrbn]?[+#]?|^[a-h][1-8][+#]?$")) {
+                throw new InvalidCharacterSequenceException("Invalid character sequence.");
+            } else {
+                throw new BadMoveException("Not a valid move.");
+            }
         }
-    }
-
-    @Override
-    public MoveLog load (String filename) {
-        return null;
-    }
-
-    @Override
-    public void save (String toSave, String path) {
-
     }
 }

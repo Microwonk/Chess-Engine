@@ -48,22 +48,6 @@ public class HotKeys implements KeyListener {
                     Chess.get().loadGame();
                 }
             }
-            case 10 -> {
-                Chess.get().getLogger().printLog(stringBuilder);
-                try {
-                    // Chess.get().getLogger().printLog(Chess.get().getGameBoard().currentPlayer().makeMove(PGNParser.parseMove(Chess.get().getGameBoard(), stringBuilder.toString())).getTransitionBoard());
-                    Chess.get().setChessBoard(Chess.get().getGameBoard().currentPlayer().makeMove(PGNParser.parseMove(Chess.get().getGameBoard(), stringBuilder.toString())).getTransitionBoard());
-                } catch (Exception ex) {
-                    Chess.get().getLogger().printLog(ex);
-                }
-                stringBuilder.delete(0, stringBuilder.length());
-                Chess.get().update();
-            }
-            default -> {
-                if (String.valueOf(e.getKeyChar()).matches("[A-Za-z0-9]+")) {
-                    stringBuilder.append(e.getKeyChar());
-                }
-            }
         }
     }
 

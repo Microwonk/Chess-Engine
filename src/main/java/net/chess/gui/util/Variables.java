@@ -16,6 +16,8 @@ public class Variables {
 
     //TODO: let user change .properties in settings menu -> properties profiles and so on
 
+    public static final String TITLE = "森 Mori Chess ~dev";
+
     //config variables
     public static final Set <ColorPack> defaultColorPacks = new HashSet <>(List.of(
             new ColorPack(new Color(196, 189, 175), new Color(155, 132, 75), "Default"),

@@ -6,10 +6,8 @@ import net.chess.engine.board.Board.Builder;
 import net.chess.engine.board.BoardUtilities;
 import net.chess.engine.pieces.*;
 import net.chess.exception.ChessException;
-import net.chess.gui.util.Loadable;
-import net.chess.gui.util.Savable;
 
-public class FenParser implements Loadable<Board>, Savable <String> {
+public class FenParser {
 
     private FenParser () {
         throw new ChessException("Parser may not be initialized");
@@ -124,15 +122,5 @@ public class FenParser implements Loadable<Board>, Savable <String> {
 
     private static String currentPlayer (final Board board) {
         return board.currentPlayer().toString();
-    }
-
-    @Override
-    public Board load (String filename) {
-        return null;
-    }
-
-    @Override
-    public void save (String toSave, String path) {
-
     }
 }

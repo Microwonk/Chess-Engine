@@ -47,7 +47,6 @@ public class AudioHandler {
         }
     }
 
-    // works!
     public static void setSystemVolume(float volume) {
         try {
             Mixer.Info[] mixerInfo = AudioSystem.getMixerInfo();
