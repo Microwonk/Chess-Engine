@@ -1,51 +1,21 @@
 package net.chess.network.test;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.ServerSocket;
-import java.net.Socket;
+import net.chess.engine.board.Board;
+import net.chess.engine.board.BoardUtilities;
+import net.chess.engine.board.Move;
+import net.chess.network.NetworkPlayer;
+import net.chess.network.NetworkUtils;
+
+import java.util.Arrays;
+import java.util.Random;
 
 public class Server {
-    public static void main(String[] args) {
-        try {
-            ServerSocket serverSocket = new ServerSocket(12345);
-            System.out.println("Server started. Waiting for a client...");
-
-            Socket clientSocket = serverSocket.accept();
-            System.out.println("Client connected: " + clientSocket);
-
-            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-
-            // Start a separate thread to handle incoming messages from the client
-            Thread receiveThread = new Thread(() -> {
-                try {
-                    String receivedMessage;
-                    while ((receivedMessage = in.readLine()) != null) {
-                        System.out.println("Client: " + receivedMessage);
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            });
-            receiveThread.start();
-
-            // Read messages from the console and send them to the client
-            BufferedReader consoleIn = new BufferedReader(new InputStreamReader(System.in));
-            String message;
-            while ((message = consoleIn.readLine()) != null) {
-                out.println(message);
-            }
-
-            // Close connections
-            in.close();
-            out.close();
-            clientSocket.close();
-            serverSocket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+    public static void main(String[] args) throws Exception {
+        NetworkPlayer server = new NetworkPlayer();
+        for (int i = 0; i < 20; i++) {
+            server.send(new Move.PawnJump(Board.createStandardBoard(), BoardUtilities.cachedBlackPawns[new Random().nextInt(0, 64)], new Random().nextInt(0, 64)));
+            Thread.sleep(500);
         }
+        server.close();
     }
 }

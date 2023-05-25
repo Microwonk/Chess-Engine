@@ -11,8 +11,8 @@ public class NetworkUtils {
         return Base64.getEncoder().encodeToString(address.getBytes());
     }
 
-    public static String decode(String address) {
-        return new String(Base64.getDecoder().decode(address.getBytes()));
+    public static String decode(String code) {
+        return new String(Base64.getDecoder().decode(code.getBytes()));
     }
 
     public static String getLocalIPAddress () throws Exception {

@@ -2,7 +2,6 @@ package net.chess;
 
 import com.formdev.flatlaf.FlatDarkLaf;
 import net.chess.gui.Chess;
-import net.chess.network.NetworkUtils;
 
 import javax.swing.*;
 
@@ -20,16 +19,6 @@ public class Main {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        System.out.println(NetworkUtils.encode("192.168.0.1"));
-        System.out.println(NetworkUtils.decode(NetworkUtils.encode("192.168.0.1")));
-        try {
-            System.out.println(NetworkUtils.getLocalIPAddress());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-
 
         JFrame.setDefaultLookAndFeelDecorated(false);
         Chess.get().show();

@@ -5,6 +5,7 @@ import net.chess.engine.pieces.Piece;
 import net.chess.engine.pieces.Rook;
 import net.chess.exception.ChessException;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 import static net.chess.engine.board.Board.Builder;

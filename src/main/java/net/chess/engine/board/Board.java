@@ -8,6 +8,7 @@ import net.chess.engine.player.WhitePlayer;
 import net.chess.gui.Chess;
 import net.chess.parsing.FenParser;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
